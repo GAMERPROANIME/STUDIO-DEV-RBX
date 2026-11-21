@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import os
 import platform
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -23,18 +24,40 @@ STUDIO_SETUP_INSTRUCTIONS = "\n".join([
 ])
 
 
-def _wrap_windows_batch(command: str, args: list[str],
-                        system: str | None = None) -> tuple[str, list[str]]:
-    """A .bat/.cmd cannot be spawned directly on Windows: it needs cmd.exe /c."""
+@dataclass(frozen=True)
+class LaunchPlan:
+    """How to start the official Studio MCP server (nothing is simulated)."""
+
+    command: str | None = None
+    args: list[str] = field(default_factory=list)
+    cwd: str | None = None
+    source: str = "missing"  # explicit | env | discovered | missing
+
+    @property
+    def display(self) -> str:
+        return " ".join([self.command or "", *self.args]).strip()
+
+
+def _wrap_windows_batch(command: str, args: list[str], system: str | None = None,
+                        cwd: str | None = None) -> tuple[str, list[str], str | None, str]:
+    """A .bat/.cmd cannot be spawned directly on Windows.
+
+    Studio's own settings show `cmd.exe /c cd /d %LOCALAPPDATA%\Roblox && .\mcp.bat`, i.e. the
+    script must run *inside* its folder. We reproduce that with cwd = the folder, which is the
+    only form that also survives usernames containing spaces.
+    """
     system = platform.system() if system is None else system
-    if system == "Windows" and Path(command).suffix.lower() in (".bat", ".cmd"):
-        return "cmd.exe", ["/c", command, *args]
-    return command, args
+    path = Path(command)
+    if system == "Windows" and path.suffix.lower() in (".bat", ".cmd"):
+        return "cmd.exe", ["/c", path.name, *args], cwd or str(path.parent), "discovered"
+    return command, args, cwd, "discovered"
 
 
-def discover_studio_mcp_command(cfg: Config) -> tuple[str | None, list[str]]:
+def discover_studio_mcp_command(cfg: Config) -> LaunchPlan:
     if cfg.roblox_studio_mcp_command:
-        return _wrap_windows_batch(cfg.roblox_studio_mcp_command, cfg.roblox_studio_mcp_args)
+        command, args, cwd, _ = _wrap_windows_batch(
+            cfg.roblox_studio_mcp_command, cfg.roblox_studio_mcp_args)
+        return LaunchPlan(command=command, args=args, cwd=cwd, source="env")
     candidates: list[Path] = []
     if platform.system() == "Windows":
         local = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
@@ -44,8 +67,9 @@ def discover_studio_mcp_command(cfg: Config) -> tuple[str | None, list[str]]:
         candidates.append(Path.home() / "Applications/RobloxStudio.app/Contents/MacOS/StudioMCP")
     for c in candidates:
         if c.exists():
-            return _wrap_windows_batch(str(c), [])
-    return None, []
+            command, args, cwd, source = _wrap_windows_batch(str(c), [])
+            return LaunchPlan(command=command, args=args, cwd=cwd, source=source)
+    return LaunchPlan()
 
 
 class RobloxConnector:
@@ -59,25 +83,27 @@ class RobloxConnector:
         self._lock = asyncio.Lock()
 
     async def info(self) -> dict[str, Any]:
-        command, args = discover_studio_mcp_command(self._cfg)
-        if not command:
-            return {"available": False, "args": args, "tools": [],
-                    "error": "Studio MCP command not found", "setupInstructions": STUDIO_SETUP_INSTRUCTIONS}
-        try:
-            await self._ensure_connected(command, args)
-            return {"available": True, "command": command, "args": args, "tools": self._tools,
+        plan = discover_studio_mcp_command(self._cfg)
+        if not plan.command:
+            return {"available": False, "args": [], "tools": [],
+                    "error": "Studio MCP command not found",
                     "setupInstructions": STUDIO_SETUP_INSTRUCTIONS}
+        try:
+            await self._ensure_connected(plan)
+            return {"available": True, "command": plan.display, "cwd": plan.cwd,
+                    "tools": self._tools, "setupInstructions": STUDIO_SETUP_INSTRUCTIONS}
         except Exception as e:  # noqa: BLE001
             return {"available": False, "command": command, "args": args, "tools": [],
                     "error": str(e), "setupInstructions": STUDIO_SETUP_INSTRUCTIONS}
 
-    async def _ensure_connected(self, command: str, args: list[str]) -> None:
+    async def _ensure_connected(self, plan: LaunchPlan) -> None:
         if self._session is not None:
             return
         async with self._lock:
             if self._session is not None:
                 return
-            params = StdioServerParameters(command=command, args=args)
+            params = StdioServerParameters(command=plan.command or "", args=plan.args,
+                                           cwd=plan.cwd)
             self._stdio_ctx = stdio_client(params)
             read, write = await self._stdio_ctx.__aenter__()
             session = ClientSession(read, write)
@@ -86,13 +112,14 @@ class RobloxConnector:
             listed = await session.list_tools()
             self._tools = [t.name for t in listed.tools]
             self._session = session
-            log.info("connected to official Studio MCP", extra={"command": command, "tools": self._tools})
+            log.info("connected to official Studio MCP",
+                     extra={"command": plan.display, "cwd": plan.cwd, "tools": self._tools})
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> Any:
-        command, cmd_args = discover_studio_mcp_command(self._cfg)
-        if not command:
+        plan = discover_studio_mcp_command(self._cfg)
+        if not plan.command:
             raise RuntimeError(f"Official Studio MCP server not configured. {STUDIO_SETUP_INSTRUCTIONS}")
-        await self._ensure_connected(command, cmd_args)
+        await self._ensure_connected(plan)
         if self._session is None:
             raise RuntimeError("Studio MCP unavailable")
         result = await self._session.call_tool(name, args)

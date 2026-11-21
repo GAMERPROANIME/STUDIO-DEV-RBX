@@ -1,13 +1,20 @@
 # DeepSeek web → Roblox Studio, pas à pas (sans être ingénieur)
 
-**Ce que tu vas obtenir :** sur `chat.deepseek.com`, un petit panneau OMNIBRIDGE en bas à droite.
-Tu cliques sur **Prompt**, tu colles dans DeepSeek, tu cliques **Lire la réponse** puis
-**Exécuter** — et DeepSeek fait vraiment des choses dans Roblox Studio (créer des objets, lire des
-scripts…). Puis **Copier** te donne les vrais résultats à recoller dans le chat.
+**Ce que tu vas obtenir :** sur `chat.deepseek.com`, un panneau OMNIBRIDGE en bas à droite avec
+trois voyants et deux boutons.
 
-> **Honnêteté** : ce n'est pas encore 100 % automatique — il y a 4 clics par tour. La version
-> automatique (zéro clic) est l'étape suivante du projet. Ce qui est décrit ici **fonctionne
-> aujourd'hui**, et a été testé (135 tests + tests manuels).
+1. **Connecter** → vérifie la page, le serveur local et Roblox Studio (vert = prêt)
+2. Tu écris ta demande, tu cliques **Démarrer la boucle**
+3. Le panneau écrit dans le chat, attend la réponse de DeepSeek, **exécute les outils dans
+   Studio**, renvoie les vrais résultats, et recommence jusqu'à la réponse finale.
+4. **Arrêter** interrompt tout à tout moment. Le **mode manuel** (4 boutons) reste disponible,
+   replié dans le panneau, si tu préfères cliquer toi-même.
+
+> **Honnêteté** : la logique de la boucle et des adaptateurs est testée automatiquement
+> (`tests/test_provider_loop.py` exécute le vrai code dans Node). En revanche, personne n'a pu
+> cliquer à ta place sur le vrai chat DeepSeek depuis un environnement sans navigateur : le
+> **premier essai réel, c'est toi qui le fais**. Si un bouton ne réagit pas, dis-moi la ligne
+> affichée dans le journal du panneau.
 
 ---
 
@@ -84,22 +91,34 @@ fichier `extension/manifest.firefox.json`.
 
 ---
 
-## Étape 7 — Utiliser DeepSeek
+## Étape 7 — Utiliser DeepSeek (mode automatique)
 
 1. Va sur https://chat.deepseek.com/ et ouvre une conversation.
 2. En bas à droite, le panneau **OMNIBRIDGE** apparaît (tu peux le déplacer en le glissant).
-3. Clique **Prompt** → le texte est copié → **colle-le dans le chat DeepSeek** → envoie.
-4. Demande ce que tu veux, par exemple :
-   - « Crée une part rouge de 4×1×4 au-dessus de la base, nommée `SpawnPlatform`. »
-   - « Lis le script `ServerScriptService.Main` et dis-moi ce qu'il fait. »
-   - « Liste les objets présents dans Workspace. »
-5. Quand DeepSeek répond, clique :
-   - **Lire la réponse** (OMNIBRIDGE extrait les appels d'outils du dernier message)
-   - **Exécuter** (les outils tournent pour de vrai dans Studio)
-   - **Copier les résultats**
-6. Colle ces résultats dans le chat → DeepSeek continue avec les vraies données.
+3. Clique **Connecter**. Trois lignes s'affichent :
 
-Répète les points 5–6 autant de fois que nécessaire. C'est la boucle.
+   | Voyant | Vert signifie |
+   | --- | --- |
+   | Page IA | zone de saisie trouvée + bouton d'envoi |
+   | Serveur local | le serveur répond (77 outils, niveau 3) |
+   | Roblox Studio | le serveur MCP de Studio répond (tu as « MCP Ready » dans Studio) |
+
+4. Écris ta demande dans **« Ce que je veux faire »**, par exemple :
+   - « Crée une part rouge de 4×1×4 au-dessus de la base, nommée `SpawnPlatform`. »
+   - « Lis le script `ServerScriptService.CAR` et résume ce qu'il fait. »
+   - « Liste les objets présents dans Workspace. »
+5. Clique **Démarrer la boucle**. Le journal affiche : cycle 1 → réponse → outils exécutés →
+   cycle 2 → réponse finale.
+6. **Arrêter** si tu veux reprendre la main.
+
+Garde-fous : 10 cycles maximum, arrêt automatique sur la réponse finale, anti-doublon (si les
+mêmes appels reviennent), deux échecs consécutifs = arrêt, et **rien ne démarre sans ton clic**.
+
+### Mode manuel (si tu préfères tout contrôler)
+
+Replie la section **« Mode manuel (4 boutons) »** dans le panneau :
+**Prompt** (copie le protocole) → colle dans le chat → **Lire la réponse** → **Exécuter** →
+**Copier** → recolle les résultats. C'est la version clic par clic de la même boucle.
 
 ---
 
@@ -122,6 +141,9 @@ tout seul : c'est toi qui cliques. Aucun cookie, aucun mot de passe n'est lu.
 | Ce que tu vois | Ce qu'il faut faire |
 | --- | --- |
 | Le panneau n'apparaît pas sur DeepSeek | Icône OMNIBRIDGE → la case « Panneau flottant » doit être cochée ; recharge l'onglet DeepSeek (F5) |
+| J'ai mis à jour le dossier, rien ne change | `chrome://extensions` → icône **↻** sur OMNIBRIDGE, puis F5 sur DeepSeek |
+| « Zone de saisie introuvable » | Clique dans la zone de texte de DeepSeek, puis re-clique **Connecter** |
+| La boucle écrit mais rien ne part | DeepSeek a changé son interface : envoie-moi la ligne du journal, l'adaptateur est à ajuster |
 | « token » refusé / voyant rouge | Recopie le code depuis `…/demarrer` (bouton **Copier**), sans espace ; clique de nouveau **Connecter** |
 | « Studio MCP command not found » | Studio doit être **ouvert** avec le serveur MCP activé (étape 6) ; sinon mets Studio à jour |
 | Rien ne s'exécute après **Exécuter** | La réponse doit contenir un bloc `{"calls":[…]}` : dis à DeepSeek « exécute maintenant avec OMNIBRIDGE » |
@@ -134,10 +156,12 @@ tout seul : c'est toi qui cliques. Aucun cookie, aucun mot de passe n'est lu.
 
 ## Limites, dites franchement
 
-- **4 clics par tour** : ce n'est pas encore la boucle autonome. C'est l'étape suivante du
-  développement (extension ↔ pont `17613` ↔ Studio).
-- Le panneau lit le **texte affiché** de la réponse (DOM), pas les données internes de DeepSeek.
-  Si DeepSeek change son interface, il faudra ajuster l'adaptateur.
+- **Mode automatique livré** : la boucle écrit, attend, exécute et renvoie les résultats. Ce qui
+  reste fragile, c'est le **DOM des plateformes** : si DeepSeek change son interface, l'adaptateur
+  (`extension/site-adapters.js`) doit être ajusté. Le mode manuel reste le filet de sécurité.
+- La boucle lit le **texte affiché** de la réponse, pas les données internes de DeepSeek.
+- Pas encore branché : la connexion directe au **pont `17613`** (sans passer par le serveur 8765).
+  Aujourd'hui la boucle utilise le serveur local (77 outils + Studio).
 - Niveau de permission **3** : lire + modifier (créer/déplacer des objets, éditer des scripts).
   Les actions classées niveau 4 demandent une confirmation explicite et ne passent pas par le panneau.
 - Une IA **web** n'a pas accès à MCP : tout passe par ton navigateur et ton ordinateur. Rien n'est

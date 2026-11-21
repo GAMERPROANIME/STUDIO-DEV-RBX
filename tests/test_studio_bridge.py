@@ -574,3 +574,22 @@ def test_cli_check_and_print_token(tmp_path):
     assert payload["host"] == "127.0.0.1"
     assert payload["state"]["state"] in ("studio_closed", "missing")
     assert payload["permissionLevel"] in (1, 2, 3, 4)
+
+
+def test_windows_batch_launch_uses_cmd_and_the_roblox_folder(tmp_path, monkeypatch):
+    """Studio's settings: cmd.exe /c cd /d %LOCALAPPDATA%\\Roblox && .\\mcp.bat"""
+    fake = tmp_path / "Roblox" / "mcp.bat"
+    fake.parent.mkdir(parents=True)
+    fake.write_text("@echo off\n", encoding="utf-8")
+
+    spec = discover_launch_spec(str(fake), [])
+    if __import__("platform").system() == "Windows":
+        assert spec.command == "cmd.exe" and spec.args == ["/c", "mcp.bat"]
+        assert spec.cwd == str(fake.parent)
+    else:
+        assert spec.command == str(fake)
+
+    from omnibridge.studio_bridge.process_manager import LaunchSpec
+
+    spec = LaunchSpec("cmd.exe", ["/c", "mcp.bat"], "discovered", cwd=str(fake.parent))
+    assert spec.cwd == str(fake.parent) and spec.display == "cmd.exe /c mcp.bat"

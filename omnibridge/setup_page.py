@@ -112,21 +112,23 @@ _PAGE = """<!doctype html>
   </div>
 
   <div class="card">
-    <h2><span class="num">3</span> Utiliser DeepSeek</h2>
+    <h2><span class="num">3</span> Utiliser DeepSeek (mode automatique)</h2>
     <ol>
       <li>Va sur <a href="https://chat.deepseek.com/" target="_blank" rel="noreferrer">
           chat.deepseek.com</a> et ouvre une conversation.</li>
       <li>Un panneau <strong>OMNIBRIDGE</strong> apparaît en bas à droite (déplaçable).</li>
-      <li>Clique <strong>Prompt</strong> → le texte est copié → colle-le dans le chat et envoie.</li>
-      <li>Quand DeepSeek répond, clique <strong>Lire la réponse</strong> → <strong>Exécuter</strong>
-          → <strong>Copier les résultats</strong>, et recolle-les dans le chat.</li>
+      <li>Clique <strong>Connecter</strong> : trois voyants s'allument (page IA, serveur local,
+          Roblox Studio).</li>
+      <li>Écris ce que tu veux dans « Ce que je veux faire », puis clique
+          <strong>Démarrer la boucle</strong>.</li>
+      <li>Le panneau écrit dans le chat, attend la réponse, exécute les outils dans Studio, renvoie
+          les résultats et recommence. <strong>Arrêter</strong> interrompt tout.</li>
     </ol>
-    <table>
-      <tr><td>Prompt</td><td>copie la liste des outils réels + le mode d'emploi</td></tr>
-      <tr><td>Lire la réponse</td><td>extrait les appels d'outils du dernier message</td></tr>
-      <tr><td>Exécuter</td><td>lance réellement les outils (donc Studio)</td></tr>
-      <tr><td>Copier</td><td>copie les vrais résultats pour les rendre à DeepSeek</td></tr>
-    </table>
+    <p class="muted">Mode manuel (replié dans le panneau) : <strong>Prompt</strong>,
+       <strong>Lire la réponse</strong>, <strong>Exécuter</strong>, <strong>Copier</strong> —
+       les mêmes actions, clic par clic, si tu préfères tout contrôler.</p>
+    <p class="muted">Garde-fous : 10 cycles maximum, arrêt sur réponse finale, anti-doublon,
+       bouton Arrêter, et rien ne se lance sans ton clic.</p>
   </div>
 
   <div class="card">

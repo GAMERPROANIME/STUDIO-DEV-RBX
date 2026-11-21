@@ -44,7 +44,26 @@ de niveau 1 (lecture), quel que soit le mode.
 ## Panneau flottant sur les sites d'IA (sans MCP)
 
 Le panneau s'injecte sur **chatgpt.com, chat.deepseek.com, gemini.google.com,
-copilot.microsoft.com, grok.com**. Il permet, sans quitter la conversation :
+copilot.microsoft.com, grok.com**. Il a deux modes.
+
+### Mode automatique (bouton « Connecter »)
+
+| Élément | Effet |
+| --- | --- |
+| Voyant *Page IA* | adaptateur du site trouvé + zone de saisie + bouton d'envoi |
+| Voyant *Serveur local* | `GET /api/health` (nombre d'outils, niveau de permission) |
+| Voyant *Studio* | `GET /api/roblox` (serveur MCP officiel de Studio joignable) |
+| **Démarrer la boucle** | écrit le prompt + ta demande dans le chat, attend que la réponse se stabilise, exécute les appels via `POST /api/webai/run`, renvoie le bloc de résultats, recommence |
+| **Arrêter** | interrompt immédiatement |
+
+Garde-fous : démarrage uniquement sur clic, 10 cycles maximum, timeout de réponse, arrêt sur
+réponse finale, anti-doublon sur les appels, 2 échecs consécutifs = arrêt, journal visible dans
+le panneau. Le code vit dans `extension/agent-loop.js` (boucle) et
+`extension/site-adapters.js` (un adaptateur par plateforme : `detectProvider`, `findComposer`,
+`findSendButton`, `readAssistantMessages`, `getLatestAssistantResponse`, `isGenerating`,
+`sendMessage`, `observeConversation`, `getConversationId`, `getProviderStatus`).
+
+### Mode manuel (replié dans le panneau)
 
 | Bouton | Effet |
 | --- | --- |
@@ -54,8 +73,9 @@ copilot.microsoft.com, grok.com**. Il permet, sans quitter la conversation :
 | Copier | recopie le bloc à recoller |
 
 Activation : popup → case « Panneau flottant sur ChatGPT / DeepSeek / Gemini / Copilot / Grok ».
-Aucune frappe automatique, aucun envoi de message, aucune lecture de cookies : chaque action
-est un clic. Détails et dépannage : [`WEB_AI.md`](WEB_AI.md).
+Aucune lecture de cookies, de mots de passe ou de jetons de session, aucun serveur distant :
+tout passe par `127.0.0.1` avec le token. Détails et dépannage : [`WEB_AI.md`](WEB_AI.md) et
+[`../DEEPSEEK_WEB_PAS_A_PAS.md`](../DEEPSEEK_WEB_PAS_A_PAS.md).
 
 ## Outils navigateur
 

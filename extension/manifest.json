@@ -50,6 +50,7 @@
       ],
       "js": [
         "site-adapters.js",
+        "agent-loop.js",
         "bridge-panel.js"
       ],
       "run_at": "document_idle"

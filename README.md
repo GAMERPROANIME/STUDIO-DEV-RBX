@@ -26,8 +26,10 @@ exécuteur multi-agents autonome.
 
 **Pour utiliser DeepSeek web avec Roblox Studio dès maintenant** : double-clic sur
 `DEMARRER-PANNEAU-WINDOWS.bat` (ou `DEMARRER-PANNEAU-MAC-LINUX.command`), puis suis
-[`DEEPSEEK_WEB_PAS_A_PAS.md`](DEEPSEEK_WEB_PAS_A_PAS.md) — panneau dans DeepSeek, 4 boutons
-(Prompt · Lire la réponse · Exécuter · Copier), outils réels exécutés dans Studio.
+[`DEEPSEEK_WEB_PAS_A_PAS.md`](DEEPSEEK_WEB_PAS_A_PAS.md) — panneau dans DeepSeek avec
+**Connecter** (3 voyants : page, serveur, Studio) puis **Démarrer la boucle** : l'IA écrit, attend
+sa réponse, exécute les outils dans Studio et renvoie les résultats toute seule (mode manuel en
+secours).
 
 Guides : [`DEMARRAGE_SIMPLE.md`](DEMARRAGE_SIMPLE.md) (dépannage, FAQ) ·
 [`DEEPSEEK_WEB_PAS_A_PAS.md`](DEEPSEEK_WEB_PAS_A_PAS.md) ·

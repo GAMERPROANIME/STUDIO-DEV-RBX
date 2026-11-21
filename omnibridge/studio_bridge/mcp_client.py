@@ -67,7 +67,7 @@ class StudioMCPClient:
     # ------------------------------------------------------------------ lifecycle
     def _params(self) -> StdioServerParameters:
         return StdioServerParameters(command=self.launch.command, args=list(self.launch.args),
-                                     env=None)
+                                     env=None, cwd=self.launch.cwd)
 
     async def _session_loop(self) -> None:
         """Owns the stdio connection; serves requests from the queue."""

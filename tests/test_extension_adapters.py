@@ -68,22 +68,36 @@ def test_adapters_detect_every_site(tmp_path: Path):
 
 @pytest.mark.skipif(NODE is None, reason="node not installed")
 @pytest.mark.parametrize("script", ["background.js", "content.js", "popup.js", "bridge-panel.js",
-                                    "site-adapters.js"])
+                                    "site-adapters.js", "agent-loop.js"])
 def test_extension_scripts_are_valid_javascript(script: str):
     proc = subprocess.run([NODE, "--check", str(ROOT / "extension" / script)],
                           capture_output=True, text=True, timeout=30)
     assert proc.returncode == 0, proc.stderr
 
 
-def test_panel_never_automates_the_chat_ui():
-    """Regression guard: the panel must not type into, or submit, the conversation."""
+def test_panel_only_acts_after_a_user_click_and_never_touches_credentials():
+    """The panel automates the conversation (user asked for one-click), but under hard rules.
+
+    * typing/sending lives in the *provider* (site-adapters.js), never in the panel;
+    * the loop starts from exactly one place: the "Démarrer" click handler;
+    * no cookie, no session token, no remote endpoint.
+    """
     src = (ROOT / "extension" / "bridge-panel.js").read_text(encoding="utf-8")
-    forbidden = ["insertText(", "execCommand('insertText'", "execCommand(\"insertText\"",
-                 "dispatchEvent(new KeyboardEvent", "submit()", "requestSubmit(",
-                 "document.cookie", "localStorage.getItem('session"]
-    for pattern in forbidden:
+    for pattern in ("document.cookie", "localStorage.getItem('session",
+                    "sessionStorage", "https://api.", "http://api."):
         assert pattern not in src, f"panel must not use {pattern}"
     assert "navigator.clipboard.writeText" in src
+    assert src.count("__omniBridgeLoop.start") == 0
+    assert src.count("loop.start(") == 1, "the loop starts from a single click handler"
+    assert "Démarrer la boucle" in src and "Arrêter" in src and "Connecter" in src
+    assert "insertText(" not in src, "typing belongs to the provider layer"
+
+    provider = (ROOT / "extension" / "site-adapters.js").read_text(encoding="utf-8")
+    for method in ("detectProvider", "findComposer", "findSendButton", "readAssistantMessages",
+                   "getLatestAssistantResponse", "isGenerating", "sendMessage",
+                   "observeConversation", "getConversationId", "getProviderStatus"):
+        assert method in provider, method
+    assert "document.cookie" not in provider
 
 
 def test_panel_contract_matches_the_documented_deepseek_flow():

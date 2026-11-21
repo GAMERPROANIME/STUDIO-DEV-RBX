@@ -22,6 +22,7 @@ class LaunchSpec:
     command: str
     args: list[str]
     source: str  # "env" | "discovered" | "explicit" | "missing"
+    cwd: str | None = None  # mcp.bat must run inside %LOCALAPPDATA%\Roblox
 
     @property
     def display(self) -> str:
@@ -49,6 +50,10 @@ def discover_launch_spec(command: str | None = None, args: list[str] | None = No
     """Resolve how to start the official server. Explicit configuration wins."""
     system = platform.system()
     if command:
+        path = Path(command)
+        if platform.system() == "Windows" and path.suffix.lower() in (".bat", ".cmd"):
+            return LaunchSpec("cmd.exe", ["/c", path.name, *(args or [])], "explicit",
+                              cwd=str(path.parent))
         return LaunchSpec(command, list(args or []), "explicit" if not args and command else "env")
     env_cmd = os.environ.get("OMNIBRIDGE_STUDIO_MCP_COMMAND") or os.environ.get("ROBLOX_STUDIO_MCP_COMMAND")
     if env_cmd:
@@ -61,8 +66,9 @@ def discover_launch_spec(command: str | None = None, args: list[str] | None = No
     for candidate in candidates:
         if candidate.exists():
             if system == "Windows" and candidate.suffix.lower() in (".bat", ".cmd"):
-                # .bat needs a shell; this mirrors the documented Roblox invocation.
-                return LaunchSpec("cmd.exe", ["/c", str(candidate)], "discovered")
+                # Mirrors Studio's own settings: cmd.exe /c cd /d <folder> && .\mcp.bat
+                return LaunchSpec("cmd.exe", ["/c", candidate.name], "discovered",
+                                  cwd=str(candidate.parent))
             return LaunchSpec(str(candidate), [], "discovered")
     return LaunchSpec("", [], "missing")
 

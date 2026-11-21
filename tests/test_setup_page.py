@@ -82,13 +82,18 @@ def test_build_setup_page_without_token():
     assert '"ready"' in page or "&quot;ready&quot;" in page
 
 
-def test_windows_batch_is_wrapped_in_cmd():
-    command, args = _wrap_windows_batch(r"C:\Users\me\AppData\Local\Roblox\mcp.bat", [],
-                                        system="Windows")
+def test_windows_batch_is_wrapped_and_runs_in_its_folder():
+    """Studio's own settings say: cmd.exe /c cd /d %LOCALAPPDATA%\Roblox && .\mcp.bat"""
+    # POSIX-style literal so the assertion is meaningful on every OS (backslashes are not
+    # separators on Linux); the logic under test is the .bat + cwd wrapping.
+    command, args, cwd, _source = _wrap_windows_batch(
+        "/home/me/AppData/Local/Roblox/mcp.bat", [], system="Windows")
     assert command == "cmd.exe"
-    assert args[:2] == ["/c", r"C:\Users\me\AppData\Local\Roblox\mcp.bat"]
-    command, args = _wrap_windows_batch("/usr/local/bin/StudioMCP", ["--x"], system="Linux")
-    assert command == "/usr/local/bin/StudioMCP" and args == ["--x"]
+    assert args == ["/c", "mcp.bat"]
+    assert cwd == "/home/me/AppData/Local/Roblox"
+    command, args, cwd, _source = _wrap_windows_batch("/usr/local/bin/StudioMCP", ["--x"],
+                                                      system="Linux")
+    assert command == "/usr/local/bin/StudioMCP" and args == ["--x"] and cwd is None
 
 
 def test_panel_endpoints_used_by_the_extension(client, cfg):
