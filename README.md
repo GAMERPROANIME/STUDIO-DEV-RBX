@@ -17,7 +17,17 @@ exécuteur multi-agents autonome.
 > Aucun outil factice. Chaque outil est implémenté et testé, et déclare honnêtement quand
 > son backend (Roblox Studio, extension navigateur, Playwright) n'est pas connecté.
 
-## Démarrage rapide
+## Démarrage ultra simple (sans être ingénieur)
+
+1. **Télécharger** : [ZIP de la branche de développement](https://codeload.github.com/GAMERPROANIME/STUDIO-DEV-RBX/zip/refs/heads/arena/06334a9a-studio-dev-rbx) → décompresser.
+2. **Double-clic** : `DEMARRER-WINDOWS.bat` (Windows) ou `DEMARRER-MAC-LINUX.command` (Mac/Linux).
+3. **C'est tout** : une page s'ouvre sur `http://127.0.0.1:17613` avec le code d'appairage,
+   l'état de Roblox Studio en français et le bouton « Re-vérifier l'état ».
+
+Guide illustré (dépannage, captures, FAQ) : [`DEMARRAGE_SIMPLE.md`](DEMARRAGE_SIMPLE.md) ·
+aperçu de la page : [`docs/apercu-page.html`](docs/apercu-page.html).
+
+## Démarrage rapide (développeur)
 
 ```bash
 python -m venv .venv

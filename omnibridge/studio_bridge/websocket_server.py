@@ -15,15 +15,19 @@ import json
 import logging
 from http import HTTPStatus
 from typing import Any
+from urllib.parse import parse_qs
 
 from websockets.asyncio.server import ServerConnection, serve
+from websockets.datastructures import Headers
 from websockets.exceptions import ConnectionClosed
+from websockets.http11 import Response
 
 from .config import BridgeConfig
 from .connection_manager import BridgeError, ConnectionManager
 from .protocol import (ACTIONS, CLOSE_BAD_PROTOCOL, CLOSE_TOO_SLOW, CLOSE_UNAUTHORIZED,
                        PROTOCOL_VERSION)
 from .security import AuditLog, check_token, origin_allowed
+from .status_page import build_page, should_reveal_token, status_payload
 
 log = logging.getLogger("omnibridge.studio_bridge")
 
@@ -41,7 +45,9 @@ class BridgeServer:
 
     # ------------------------------------------------------------ handshake filters
     async def _process_request(self, connection: ServerConnection, request):
-        path = request.path.split("?", 1)[0]
+        path, _, query = request.path.partition("?")
+        if (request.headers.get("Upgrade") or "").lower() != "websocket":
+            return await self._http(request, path, parse_qs(query))
         if path not in ACCEPTED_PATHS:
             return connection.respond(HTTPStatus.NOT_FOUND, "unknown path\n")
         ok, reason = origin_allowed(request.headers.get("Origin"), self.cfg.allowed_origin_prefixes)
@@ -49,6 +55,41 @@ class BridgeServer:
             self.audit.write("origin_rejected", origin=request.headers.get("Origin"), reason=reason)
             return connection.respond(HTTPStatus.FORBIDDEN, reason + "\n")
         return None
+
+    # ------------------------------------------------------------ human-facing HTTP
+    async def _http(self, request, path: str, query: dict[str, list[str]]):
+        """Setup page + JSON status. No token is ever handed to another origin."""
+        allowed_paths = ("/", "/index.html", "/setup", "/status.json", "/health")
+        if path not in allowed_paths:
+            return _response(HTTPStatus.NOT_FOUND, b"unknown path\n", "text/plain; charset=utf-8")
+        if path == "/health":
+            body = json.dumps({"ok": True, "bridge": "studio_bridge", "protocol": PROTOCOL_VERSION})
+            return _response(HTTPStatus.OK, body.encode(), "application/json",
+                             extra={"Access-Control-Allow-Origin": "*"})
+        if query.get("refresh"):
+            try:
+                await self.manager.connector.connect(force=True)
+                await self.manager.list_tools(refresh=True)
+            except Exception:  # noqa: BLE001 - the page must still render
+                pass
+            self.broadcast_state()
+        if path == "/status.json":
+            payload = status_payload({**self.manager.status(),
+                                      "studio": self.manager.connector.status()},
+                                     self.manager.registry.manifest())
+            return _response(HTTPStatus.OK, json.dumps(payload, default=str).encode(),
+                             "application/json")
+        origin = request.headers.get("Origin")
+        reveal = should_reveal_token(
+            origin,
+            request.headers.get("Sec-Fetch-Mode"),
+            request.headers.get("Sec-Fetch-Site"),
+            request.headers.get("User-Agent") or "",
+        )
+        body = build_page({**self.manager.status(), "studio": self.manager.connector.status()},
+                          self.manager.registry.manifest(),
+                          self.cfg.token if reveal else None, self.cfg.uri)
+        return _response(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
     async def _handshake(self, ws: ServerConnection) -> bool:
         try:
@@ -215,6 +256,15 @@ class BridgeServer:
             ping_timeout=self.cfg.heartbeat_s,
             close_timeout=5,
         )
+        # Defensive: confirm the real bound address is loopback, not merely requested to be.
+        sockets = getattr(self._server, "sockets", None) or []
+        if sockets:
+            bound = sockets[0].getsockname()[0]
+            if bound not in ("127.0.0.1", "::1"):
+                self._server.close()
+                await self._server.wait_closed()
+                self._server = None
+                raise RuntimeError(f"refusing to serve on non-loopback address {bound}")
         self.audit.write("server_started", host=self.cfg.host, port=self.cfg.port,
                          protocol=PROTOCOL_VERSION)
 
@@ -239,6 +289,23 @@ class BridgeServer:
         if not hasattr(self, "_stop_evt"):
             self._stop_evt = asyncio.Event()
         return self._stop_evt
+
+
+def _response(status: HTTPStatus, body: bytes, content_type: str,
+              extra: dict[str, str] | None = None) -> Response:
+    headers = Headers()
+    headers["Content-Type"] = content_type
+    headers["Content-Length"] = str(len(body))
+    headers["Cache-Control"] = "no-store"
+    headers["X-Content-Type-Options"] = "nosniff"
+    headers["X-Frame-Options"] = "DENY"
+    headers["Referrer-Policy"] = "no-referrer"
+    headers["Content-Security-Policy"] = (
+        "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; "
+        "img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'")
+    for key, value in (extra or {}).items():
+        headers[key] = value
+    return Response(status.value, status.phrase, headers, body)
 
 
 async def _reply(ws: ServerConnection, request_id: str, action: str, ok: bool,

@@ -53,10 +53,19 @@ fictive : chacun couvre une contrainte que les deux autres ne peuvent pas lever.
 | `omnibridge/studio_bridge/protocol.py` | version de protocole et catalogue d'actions |
 | `omnibridge/studio_bridge/main.py` | composition root, CLI, logs rotatifs, boucle de rafraîchissement, arrêt par signal |
 | `python_bridge/` | point d'entrée `python -m python_bridge` (délègue au paquet installé) |
+| `omnibridge/studio_bridge/status_page.py` | page de réglage locale (HTML/CSS/JS vanilla) : état en français, code d'appairage, outils réels, `/status.json` |
+| `DEMARRER-WINDOWS.bat` · `DEMARRER-MAC-LINUX.command` | lancement en double-clic (installation incluse) |
 
 ---
 
-## 3. Démarrage
+## 3. Démarrage (utilisateur non technique)
+
+Double-clic : `DEMARRER-WINDOWS.bat` ou `DEMARRER-MAC-LINUX.command`. Le script crée
+l'environnement, installe, affiche le code d'appairage et ouvre la page de réglage
+`http://127.0.0.1:17613` (état en français, code à copier, bouton « Re-vérifier »).
+Guide pas à pas : [`../DEMARRAGE_SIMPLE.md`](../DEMARRAGE_SIMPLE.md).
+
+## 3 bis. Démarrage (ligne de commande)
 
 ```bash
 pip install -e ".[dev]"                 # websockets est une dépendance réelle
@@ -116,6 +125,12 @@ Trames JSON texte, un objet par trame. `id` corrèle requête et réponse.
 {"id":"5","ok":false,"action":"call_tool","error":{"code":"permission_denied","message":"…","detail":"…"}}
 {"type":"event","event":"mcp_state","data":{"state":"ready", …}}
 ```
+
+HTTP (hors WebSocket), même port : `GET /` page de réglage · `GET /status.json` état sans secret ·
+`GET /health` sonde. La page n'affiche le code d'appairage que si la requête vient de la barre
+d'adresse (pas d'`Origin`, `Sec-Fetch-Mode` ≠ `cors`/`no-cors`, `Sec-Fetch-Site` = `none`) ;
+`/status.json` ne contient jamais le code ; CSP stricte, `X-Frame-Options: DENY`, `no-store`,
+aucun en-tête CORS.
 
 Codes d'erreur : `unknown_tool`, `invalid_arguments`, `permission_denied`, `not_connected`,
 `timeout`, `rate_limited`, `tool_failed`, `busy`, `unknown_action`, `bad_request`, `internal_error`,

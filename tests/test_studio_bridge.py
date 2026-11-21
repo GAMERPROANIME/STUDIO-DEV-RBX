@@ -492,6 +492,68 @@ def test_handshake_timeout_closes_silent_clients(tmp_path):
     asyncio.run(scenario())
 
 
+# ----------------------------------------------------------------------------- setup page
+def test_setup_page_and_status_json(tmp_path):
+    async def scenario():
+        import httpx
+
+        cfg = make_config(tmp_path)
+        state = await stack(cfg)
+        _client, _registry, _connector, _manager, _server, _audit = state
+        base = f"http://127.0.0.1:{cfg.port}"
+        try:
+            async with httpx.AsyncClient(timeout=10) as http:
+                # typed in the address bar (no Origin, Sec-Fetch-Site: none) → token visible
+                page = await http.get(f"{base}/", headers={"Sec-Fetch-Site": "none",
+                                                           "Sec-Fetch-Mode": "navigate"})
+                assert page.status_code == 200
+                assert "Pont OMNIBRIDGE" in page.text
+                assert cfg.token in page.text
+                assert "Content-Security-Policy" in page.headers
+                assert page.headers["X-Frame-Options"] == "DENY"
+
+                # requested by another origin (extension, page) → token hidden
+                hidden = await http.get(f"{base}/",
+                                        headers={"Origin": "chrome-extension://abcdefgh",
+                                                 "Sec-Fetch-Mode": "cors"})
+                assert hidden.status_code == 200 and cfg.token not in hidden.text
+
+                status = await http.get(f"{base}/status.json",
+                                        headers={"Origin": "chrome-extension://abcdefgh"})
+                assert status.status_code == 200
+                payload = status.json()
+                assert payload["ok"] is True and "state" in payload
+                assert cfg.token not in status.text
+                assert "Access-Control-Allow-Origin" not in status.headers
+
+                health = await http.get(f"{base}/health")
+                assert health.status_code == 200 and health.json()["protocol"] == 1
+
+                missing = await http.get(f"{base}/admin")
+                assert missing.status_code == 404
+
+                refreshed = await http.get(f"{base}/?refresh=1",
+                                           headers={"Sec-Fetch-Site": "none"})
+                assert refreshed.status_code == 200
+        finally:
+            await close(state)
+
+    asyncio.run(scenario())
+
+
+def test_token_reveal_policy():
+    from omnibridge.studio_bridge.status_page import human_state, should_reveal_token
+
+    assert should_reveal_token(None, "navigate", "none") is True
+    assert should_reveal_token(None, None, None) is True
+    assert should_reveal_token("chrome-extension://abc", "cors", "none") is False
+    assert should_reveal_token(None, "cors", "none") is False
+    assert should_reveal_token(None, "navigate", "cross-site") is False
+    for state in ("ready", "no_tools", "studio_closed"):
+        title, hint, level = human_state(state)
+        assert title and hint and level in ("ok", "warn", "error")
+
+
 # ----------------------------------------------------------------------------- CLI
 def test_cli_check_and_print_token(tmp_path):
     env = {**os.environ, "OMNIBRIDGE_DATA_DIR": str(tmp_path),
