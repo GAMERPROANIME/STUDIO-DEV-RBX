@@ -1,55 +1,143 @@
-# Connecting AI clients
+# Connecter un client IA
 
-OMNIBRIDGE speaks MCP over **stdio** (local clients) and **Streamable HTTP** (remote/localhost clients).
+OMNIBRIDGE expose **un seul serveur MCP** avec deux transports :
 
-## 1. Start the server
+| Transport | URL / commande | Auth | Usage |
+| --- | --- | --- | --- |
+| Streamable HTTP | `http://127.0.0.1:8765/mcp` | `Authorization: Bearer <token>` | clients distants de l'onglet, dashboard, plusieurs clients |
+| stdio | `python -m omnibridge --stdio` | aucune (processus local) | Claude Desktop, IDE, agents locaux |
+
+Le token est dans `~/.omnibridge/token.txt` (créé au premier lancement, permissions `600`).
+
 ```bash
-npm install
-npm run build
-npm start            # stdio + HTTP on 127.0.0.1:8765
-```
-Token: `~/.omnibridge/token.txt` (auto-generated, mode 0600).
-
-## 2. Claude Code
-```bash
-claude mcp add omnibridge -- node /absolute/path/to/STUDIO-DEV-RBX/dist/index.js
-# or .mcp.json at project root:
-# { "mcpServers": { "omnibridge": { "command": "node", "args": ["/abs/path/dist/index.js"] } } }
+omnibridge --transport http          # HTTP + dashboard + MCP HTTP
+omnibridge --stdio                   # stdio seul, stdout réservé au JSON-RPC
+omnibridge                           # les deux (stdio désactivé si stdin est un terminal)
 ```
 
-## 3. Claude Desktop / Cursor / VS Code (stdio)
-Add to `claude_desktop_config.json` (or Cursor/VS Code MCP config):
+## Claude Desktop
+
+`claude_desktop_config.json` :
+
+- macOS : `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows : `%APPDATA%\Claude\claude_desktop_config.json`
+
 ```json
 {
   "mcpServers": {
     "omnibridge": {
-      "command": "node",
-      "args": ["/absolute/path/to/STUDIO-DEV-RBX/dist/index.js"]
+      "command": "python",
+      "args": ["-m", "omnibridge", "--stdio"],
+      "env": {
+        "OMNIBRIDGE_WORKSPACE": "/chemin/vers/votre/projet",
+        "OMNIBRIDGE_PERMISSION_LEVEL": "3"
+      }
     }
   }
 }
 ```
-VS Code (`.vscode/mcp.json`): same shape under `"servers"`.
 
-## 4. Streamable HTTP clients (ChatGPT/Codex, custom)
-- Endpoint: `http://127.0.0.1:8765/mcp`
-- Header: `Authorization: Bearer <token from ~/.omnibridge/token.txt>`
-- The server is stateful (MCP sessions). Start with `OMNIBRIDGE_TRANSPORT=http`.
+Redémarrez Claude Desktop : les 72 outils apparaissent dans la liste MCP.
 
-## 5. Roblox Studio (official MCP)
-1. Open a place in Roblox Studio.
-2. Assistant → Settings → MCP Servers → enable **Enable Studio as MCP server**.
-3. Set `ROBLOX_STUDIO_MCP_COMMAND` to the StudioMCP binary
-   (Windows: `%LOCALAPPDATA%\Roblox\mcp.bat`, macOS: `StudioMCP` inside `RobloxStudio.app`).
-4. Restart OMNIBRIDGE, then call `roblox_list_studios` — it should name your open place.
-   OMNIBRIDGE proxies Roblox's own tools; it never duplicates them.
-5. Without Studio: use Rojo projects — `roblox_inspect_project`, `roblox_read_script`, `roblox_edit_scripts` work on disk.
+## Claude Code / Cursor / VS Code (MCP)
 
-## 6. Browser extension
-See `docs/EXTENSION.md`.
-
-## 7. Verify
 ```bash
-npm run diagnose     # PASS/FAIL per subsystem
+# Claude Code
+claude mcp add omnibridge -- python -m omnibridge --stdio
+
+# Cursor / VS Code : ~/.cursor/mcp.json ou .vscode/mcp.json
 ```
-Or call `system_health` from any connected client.
+
+```json
+{
+  "mcpServers": {
+    "omnibridge": {
+      "command": "python",
+      "args": ["-m", "omnibridge", "--stdio"],
+      "env": { "OMNIBRIDGE_WORKSPACE": "${workspaceFolder}" }
+    }
+  }
+}
+```
+
+## Client HTTP (Streamable HTTP)
+
+```json
+{
+  "mcpServers": {
+    "omnibridge": {
+      "type": "http",
+      "url": "http://127.0.0.1:8765/mcp",
+      "headers": { "Authorization": "Bearer VOTRE_TOKEN" }
+    }
+  }
+}
+```
+
+Test manuel :
+
+```bash
+TOKEN=$(cat ~/.omnibridge/token.txt)
+curl -s -X POST http://127.0.0.1:8765/mcp \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+        "protocolVersion":"2025-11-25","capabilities":{},
+        "clientInfo":{"name":"curl","version":"1"}}}'
+```
+
+Le protocole négocie la version supportée par le SDK (jusqu'à `2025-11-25`).
+
+## Client Python (SDK officiel)
+
+```python
+import asyncio, httpx
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+
+async def main():
+    token = open("/home/USER/.omnibridge/token.txt").read().strip()
+    async with httpx.AsyncClient(headers={"Authorization": f"Bearer {token}"}) as client:
+        async with streamable_http_client("http://127.0.0.1:8765/mcp", http_client=client) as streams:
+            read, write = streams[0], streams[1]
+            async with ClientSession(read, write) as s:
+                await s.initialize()
+                print(len((await s.list_tools()).tools), "tools")
+                res = await s.call_tool("system_health", {})
+                print(res.content[0].text[:200])
+
+asyncio.run(main())
+```
+
+## Ressources et prompts
+
+| Type | URI / nom | Contenu |
+| --- | --- | --- |
+| resource | `omnibridge://tools/catalogue` | catalogue complet avec schémas JSON |
+| resource | `omnibridge://system/info` | version, workspace, niveau, nombre d'outils |
+| resource | `omnibridge://knowledge/luau` | base de connaissances Luau/Roblox embarquée |
+| prompt | `roblox-game-mission` | mission de construction/débogage Roblox |
+| prompt | `debug-workflow` | boucle de débogage structurée |
+
+## Niveaux de permission
+
+```bash
+OMNIBRIDGE_PERMISSION_LEVEL=1   # lecture seule
+OMNIBRIDGE_PERMISSION_LEVEL=2   # assistance (défaut) : lecture + tests + indexation
+OMNIBRIDGE_PERMISSION_LEVEL=3   # automatisation contrôlée (écriture de fichiers, agents, tâches)
+OMNIBRIDGE_PERMISSION_LEVEL=4   # sensible : process_run, file_delete (confirm=true obligatoire)
+```
+
+Un refus est explicite (`permission denied: ...`) et journalisé dans l'audit.
+
+## Dépannage
+
+| Symptôme | Cause / solution |
+| --- | --- |
+| `401 unauthorized` | token absent ou erroné → `cat ~/.omnibridge/token.txt` |
+| stdout pollué / client stdio qui ferme | un `print()` a été ajouté dans le code : les logs doivent aller sur stderr |
+| `Unknown tool` | le nom n'existe pas → `omnibridge tools` |
+| `roblox_*` renvoie `available: false` | Studio MCP officiel non configuré → voir `docs/ROBLOX.md` |
+| dashboard sans données | token non saisi dans le champ « Connecter » |
+| port occupé | `omnibridge --transport http --port 8766` |

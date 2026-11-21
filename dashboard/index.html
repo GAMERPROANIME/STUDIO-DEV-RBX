@@ -8,35 +8,87 @@
 </head>
 <body>
 <header>
-  <div class="logo">◈ OMNIBRIDGE <span>AI</span></div>
+  <div class="logo">◈ OMNIBRIDGE <span>AI</span><em>python core</em></div>
   <nav id="tabs">
     <button data-tab="dashboard" class="active">Dashboard</button>
     <button data-tab="mcp">MCP Explorer</button>
+    <button data-tab="connections">AI Connections</button>
+    <button data-tab="extension">Browser Extension</button>
     <button data-tab="roblox">Roblox Studio</button>
-    <button data-tab="agents">Agent Manager</button>
     <button data-tab="knowledge">Knowledge Center</button>
-    <button data-tab="audit">Audit</button>
+    <button data-tab="agents">Agent Manager</button>
+    <button data-tab="settings">Settings</button>
   </nav>
   <div class="token-box">
     <input id="token" type="password" placeholder="Token local (~/.omnibridge/token.txt)">
     <button id="saveToken">Connecter</button>
   </div>
 </header>
+
 <main>
   <section id="tab-dashboard" class="tab active">
     <div class="cards" id="healthCards"></div>
-    <h2>État des connexions</h2>
+    <h2>État des sous-systèmes</h2>
     <pre id="healthDetail" class="panel"></pre>
   </section>
+
   <section id="tab-mcp" class="tab">
-    <h2>Outils MCP (<span id="toolCount">0</span>)</h2>
+    <h2>Explorateur MCP · <span id="toolCount">0</span> outils</h2>
     <div class="filters" id="catFilters"></div>
-    <div id="toolList" class="tool-grid"></div>
+    <div class="split">
+      <div id="toolList" class="tool-grid"></div>
+      <aside class="runner">
+        <h3 id="runnerTitle">Sélectionnez un outil</h3>
+        <p id="runnerDesc" class="muted">Chaque outil est réel : aucune simulation.</p>
+        <label>Arguments JSON</label>
+        <textarea id="runnerArgs" rows="6">{}</textarea>
+        <label class="check"><input id="runnerConfirm" type="checkbox"> Confirmer (opérations de niveau 4)</label>
+        <button id="runnerRun">Exécuter l'outil</button>
+        <pre id="runnerResult" class="panel"></pre>
+      </aside>
+    </div>
   </section>
+
+  <section id="tab-connections" class="tab">
+    <h2>Connexions IA</h2>
+    <p class="muted">OMNIBRIDGE expose un serveur MCP unique. Choisissez le transport adapté à votre client.</p>
+    <div id="connectionCards" class="cards"></div>
+    <h3>Configuration MCP standard (HTTP)</h3>
+    <pre id="mcpHttpConfig" class="panel"></pre>
+    <h3>Configuration MCP standard (stdio)</h3>
+    <pre id="mcpStdioConfig" class="panel"></pre>
+    <p class="muted">Le token est requis pour HTTP. Pour stdio, le client lance le processus : aucune authentification réseau n'est nécessaire.</p>
+  </section>
+
+  <section id="tab-extension" class="tab">
+    <h2>Extension navigateur</h2>
+    <div class="cards" id="extensionCards"></div>
+    <h3>Installation</h3>
+    <ol class="steps">
+      <li>Ouvrez <code>chrome://extensions</code> (ou <code>about:debugging</code> pour Firefox) et activez le mode développeur.</li>
+      <li>« Charger l'extension non empaquetée » → dossier <code>extension/</code>.</li>
+      <li>Ouvrez le popup, collez le token, choisissez un mode, cliquez « Connecter ».</li>
+      <li>En mode manuel, cliquez « Autoriser 10 min » avant chaque session.</li>
+      <li>Optionnel : <code>python -m omnibridge.bridge.install --extension-id &lt;id&gt;</code> pour le Desktop Bridge.</li>
+    </ol>
+    <h3>Modes</h3>
+    <pre class="panel">manual     : l'utilisateur autorise une fenêtre de 10 min
+contextual : contexte de l'onglet actif (texte, sélection, liens, capture)
+developer  : mode contextual + métadonnées techniques (meta, scripts, timings)
+research   : lecture seule — capture et infos techniques refusées</pre>
+    <div class="row">
+      <button id="extRefresh">Rafraîchir le statut</button>
+      <button id="extProbe">Tester une commande (active tab)</button>
+    </div>
+    <pre id="extResult" class="panel"></pre>
+  </section>
+
   <section id="tab-roblox" class="tab">
     <h2>Roblox Studio</h2>
+    <div class="cards" id="robloxCards"></div>
+    <h3>Connecteur officiel Studio MCP</h3>
     <pre id="robloxDetail" class="panel"></pre>
-    <h3>Tester un outil</h3>
+    <h3>Exécuter un outil Roblox</h3>
     <div class="row">
       <select id="robloxTool"></select>
       <input id="robloxArgs" placeholder='Arguments JSON ex: {"path":"."}' style="flex:1">
@@ -44,31 +96,44 @@
     </div>
     <pre id="robloxResult" class="panel"></pre>
   </section>
+
+  <section id="tab-knowledge" class="tab">
+    <h2>Knowledge Center</h2>
+    <div class="cards" id="knowledgeCards"></div>
+    <div class="row">
+      <input id="kbQuery" placeholder="Rechercher (ex: RemoteEvent validation)" style="flex:1">
+      <button id="kbSearch">Rechercher</button>
+      <button id="kbSeed">Indexer la base Luau</button>
+      <button id="kbDocs">Récupérer la doc officielle</button>
+    </div>
+    <pre id="kbResult" class="panel"></pre>
+  </section>
+
   <section id="tab-agents" class="tab">
     <h2>Agent Manager</h2>
     <div class="row">
-      <input id="goal" placeholder="Objectif (ex: Crée un jeu de combat arène Roblox)" style="flex:1">
+      <input id="goal" placeholder="Objectif (ex: Crée une arène de combat Roblox avec DataStore)" style="flex:1">
       <button id="startTask">Lancer la tâche</button>
     </div>
     <pre id="taskResult" class="panel"></pre>
     <h3>Tâches récentes</h3>
-    <div id="taskList"></div>
+    <div id="taskList" class="tool-grid"></div>
   </section>
-  <section id="tab-knowledge" class="tab">
-    <h2>Knowledge Center</h2>
-    <pre id="knowledgeDetail" class="panel"></pre>
+
+  <section id="tab-settings" class="tab">
+    <h2>Paramètres</h2>
+    <div class="cards" id="settingsCards"></div>
     <div class="row">
-      <input id="kbQuery" placeholder="Rechercher dans la base de connaissances" style="flex:1">
-      <button id="kbSearch">Rechercher</button>
+      <button id="runDiagnostics">Diagnostics complets</button>
+      <button id="runSelfTest">Auto-test des outils</button>
     </div>
-    <pre id="kbResult" class="panel"></pre>
-  </section>
-  <section id="tab-audit" class="tab">
-    <h2>Journal d'audit</h2>
+    <pre id="settingsResult" class="panel"></pre>
+    <h3>Journal d'audit</h3>
     <pre id="auditDetail" class="panel"></pre>
   </section>
 </main>
-<footer>OMNIBRIDGE AI · Universal MCP · <span id="footerStatus">non connecté</span></footer>
+
+<footer>OMNIBRIDGE AI · Universal MCP · Python core · <span id="footerStatus">non connecté</span></footer>
 <script src="app.js"></script>
 </body>
 </html>

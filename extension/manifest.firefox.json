@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "OMNIBRIDGE AI — Browser Bridge",
+  "version": "1.0.0",
+  "description": "Sends user-authorized page context to the local OMNIBRIDGE AI Python core (Firefox build). Modes: manual, contextual, developer, research.",
+  "permissions": ["activeTab", "scripting", "storage", "alarms", "nativeMessaging"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "action": { "default_popup": "popup.html", "default_title": "OMNIBRIDGE" },
+  "background": { "scripts": ["background.js"] },
+  "content_scripts": [
+    { "matches": ["<all_urls>"], "js": ["content.js"], "run_at": "document_idle" }
+  ],
+  "browser_specific_settings": {
+    "gecko": { "id": "omnibridge@local", "strict_min_version": "121.0" }
+  }
+}

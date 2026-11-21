@@ -1,24 +1,64 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><title>OMNIBRIDGE</title>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>OMNIBRIDGE</title>
 <style>
-body { width: 320px; font-family: system-ui, sans-serif; background: #0b0f17; color: #e6edf7; padding: 14px; }
-h1 { font-size: 16px; margin: 0 0 10px; } h1 span { color: #22d3ee; }
-label { display: block; font-size: 12px; color: #8b9bb4; margin: 8px 0 4px; }
-input, select { width: 100%; background: #121a29; border: 1px solid #22304d; color: #e6edf7; padding: 7px; border-radius: 6px; }
-button { width: 100%; margin-top: 10px; background: #4f8cff; color: #fff; border: none; padding: 9px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-#status { font-size: 12px; margin-top: 10px; color: #8b9bb4; }
-</style></head><body>
-<h1>◈ OMNIBRIDGE <span>AI</span></h1>
-<label>Token local (~/.omnibridge/token.txt)</label>
-<input id="token" type="password" placeholder="collez le token">
-<label>Mode</label>
-<select id="mode">
-  <option value="manual">Manuel — l'utilisateur choisit quoi transmettre</option>
-  <option value="contextual">Contextuel — contexte de l'onglet actif</option>
-  <option value="developer">Développeur — infos techniques de la page</option>
-  <option value="research">Recherche — documents Web</option>
-</select>
-<button id="connect">Connecter au serveur local</button>
-<div id="status">…</div>
-<script src="popup.js"></script>
-</body></html>
+  :root { color-scheme: dark; }
+  body { width: 340px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #0b0f17; color: #e6edf7; padding: 14px; margin: 0; }
+  h1 { font-size: 16px; margin: 0 0 2px; letter-spacing: .3px; }
+  h1 span { color: #22d3ee; }
+  .sub { font-size: 11px; color: #6b7c96; margin-bottom: 12px; }
+  label { display: block; font-size: 11px; color: #8b9bb4; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .4px; }
+  input, select { width: 100%; box-sizing: border-box; background: #121a29; border: 1px solid #22304d; color: #e6edf7; padding: 7px; border-radius: 6px; font-size: 12px; }
+  button { width: 100%; margin-top: 8px; background: #4f8cff; color: #fff; border: none; padding: 9px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
+  button.secondary { background: #1b2740; border: 1px solid #22304d; font-weight: 500; }
+  button:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  #status { font-size: 11px; margin-top: 12px; padding: 8px; border-radius: 6px; background: #101826; border: 1px solid #1a2740; line-height: 1.5; white-space: pre-wrap; }
+  .ok { color: #34d399; } .warn { color: #fbbf24; } .err { color: #f87171; }
+  details { margin-top: 10px; font-size: 11px; color: #8b9bb4; }
+  code { color: #93c5fd; }
+  #tools { max-height: 150px; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 10px; }
+</style>
+</head>
+<body>
+  <h1>◈ OMNIBRIDGE <span>AI</span></h1>
+  <div class="sub">Python core · pont navigateur</div>
+
+  <label for="server">Serveur local</label>
+  <input id="server" placeholder="http://127.0.0.1:8765">
+
+  <label for="token">Token (<code>~/.omnibridge/token.txt</code>)</label>
+  <input id="token" type="password" placeholder="collez le token">
+
+  <label for="mode">Mode</label>
+  <select id="mode">
+    <option value="manual">Manuel — vous autorisez chaque session</option>
+    <option value="contextual">Contextuel — contexte de l'onglet actif</option>
+    <option value="developer">Développeur — infos techniques de la page</option>
+    <option value="research">Recherche — lecture seule (texte, liens)</option>
+  </select>
+
+  <button id="connect">Connecter au core Python</button>
+  <div class="row">
+    <button id="authorize" class="secondary">Autoriser 10 min</button>
+    <button id="disconnect" class="secondary">Déconnecter</button>
+  </div>
+
+  <div id="status">…</div>
+
+  <details>
+    <summary>Desktop Bridge (Native Messaging)</summary>
+    <div class="row">
+      <button id="nativeStatus" class="secondary">Statut du core</button>
+      <button id="nativeTools" class="secondary">Lister les outils</button>
+    </div>
+    <div id="tools"></div>
+    <div class="sub" style="margin-top:6px">Installé avec <code>python -m omnibridge.bridge.install --extension-id &lt;id&gt;</code></div>
+  </details>
+
+  <script src="popup.js"></script>
+</body>
+</html>

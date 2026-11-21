@@ -16,8 +16,12 @@ rojo build -o game.rbxl
 # then open game.rbxl in Roblox Studio and press Play
 ```
 
+No Rojo? Create the equivalent Script/LocalScript/ModuleScript instances in Studio and
+paste the file contents — the architecture matches the Rojo tree in `project.json`.
+
 ## Work on it with OMNIBRIDGE
-1. Start OMNIBRIDGE: `npm start` (from the repo root).
+1. Start OMNIBRIDGE: `omnibridge` (or `omnibridge --transport http`) from the repo root.
+   Setup: `pip install -e .` then `omnibridge init`.
 2. Connect an MCP client (see `docs/CONNECT.md`) or use the dashboard.
 3. Enable Studio's MCP server (Assistant → Settings → MCP Servers) for live editing.
 4. Ask the AI: *"Crée/améliore un jeu de combat arène avec 3 armes et un système de progression"* —

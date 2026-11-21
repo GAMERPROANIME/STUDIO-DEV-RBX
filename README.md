@@ -1,56 +1,94 @@
-# OMNIBRIDGE AI — Universal MCP
+# OMNIBRIDGE AI — Universal MCP (Python core)
 
-**Universal AI tooling ecosystem · Autonomous agent engine · Web bridge · Roblox Studio integration**
+**Écosystème d'outils IA universel · moteur d'agents autonome · pont navigateur · intégration Roblox Studio**
 
-OMNIBRIDGE turns any MCP-compatible AI (Claude Code, Claude Desktop, Cursor, VS Code,
-ChatGPT/Codex, custom hosts) into an agent that can **research, inspect, build, test and
-fix real projects** — including Roblox games in Studio — through **63 real MCP tools**,
-a persistent knowledge engine, and an autonomous multi-agent executor.
+OMNIBRIDGE transforme n'importe quelle IA compatible MCP (Claude Desktop, Claude Code,
+Cursor, VS Code, ChatGPT/Codex, hôte personnalisé) en agent capable de **rechercher,
+inspecter, construire, tester et corriger de vrais projets** — y compris des jeux Roblox
+dans Studio — via **72 outils MCP réels**, un moteur de connaissances persistant et un
+exécuteur multi-agents autonome.
 
-> No fake tools. Every tool is implemented, tested, and honestly reports when its
-> backend (Roblox Studio, browser extension) is not connected.
+> **Python-first.** Le core, le serveur MCP, les agents, le RAG, la mémoire, les
+> diagnostics, le Desktop Bridge et les connecteurs sont en Python. JavaScript n'existe
+> que pour l'extension navigateur, Luau que pour Roblox Studio, HTML/CSS pour le dashboard.
+> Chaque composant secondaire appelle le core Python par une interface documentée — aucun
+> système concurrent, aucune fonctionnalité dupliquée.
 
-## Quick start
+> Aucun outil factice. Chaque outil est implémenté et testé, et déclare honnêtement quand
+> son backend (Roblox Studio, extension navigateur, Playwright) n'est pas connecté.
+
+## Démarrage rapide
+
 ```bash
-npm install
-npm run build
-npm start            # stdio + HTTP (dashboard on http://127.0.0.1:8765)
-npm run diagnose     # PASS/FAIL per subsystem
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+
+omnibridge init                      # crée ~/.omnibridge, le token, indexe la base Luau
+omnibridge diagnose                  # PASS/FAIL par sous-système
+omnibridge                           # stdio + HTTP (dashboard http://127.0.0.1:8765)
 ```
-Then connect a client — see [`docs/CONNECT.md`](docs/CONNECT.md).
 
-## What you get
-| Component | Description |
-|---|---|
-| **MCP Server** | Official SDK 1.32.2, stdio + Streamable HTTP, tools/resources/prompts, zod validation |
-| **63 tools** | system, files, code, web, knowledge, Roblox (13), agent (10), browser (7), plugins |
-| **Knowledge Engine** | SQLite FTS5 + TF-IDF hybrid retrieval, citations, persistent memory |
-| **Agent Engine** | Planner + executor loop with checkpoints, retries, cancellation, 7 roles |
-| **Roblox Studio** | Proxies the **official** Studio MCP server + Rojo disk layer + Luau analyzer |
-| **Browser extension** | MV3 (Chromium/Firefox), 4 modes, long-poll bridge |
-| **Desktop Bridge** | Native Messaging host, fixed command allowlist |
-| **Dashboard** | Vanilla SPA: health, MCP explorer, Roblox, agents, knowledge, audit |
-| **Security** | Permission levels L1–L4, token auth, sandbox, backups, audit, secret redaction |
+Autres commandes :
 
-## Example mission
-> *"Crée-moi un jeu Roblox de combat arène avec 3 armes et un système de progression."*
+```bash
+omnibridge --transport http --port 8765   # HTTP + dashboard + MCP Streamable HTTP
+omnibridge --stdio                        # MCP stdio uniquement (pour un client desktop)
+omnibridge tools [--category roblox]      # catalogue réel des outils
+omnibridge call --tool system_health      # appeler un outil en CLI
+omnibridge call --tool process_run --args '{"action":"pytest"}' --confirm
+omnibridge test                           # auto-test end-to-end des outils
+```
 
-The agent inspects the project → researches Roblox docs → plans → builds Luau systems →
-analyzes/tests → fixes errors → presents a sourced report. A complete playable example
-ships in [`examples/roblox-combat-game/`](examples/roblox-combat-game/README.md).
+Connexion d'un client IA : [`docs/CONNECT.md`](docs/CONNECT.md).
+Token : `~/.omnibridge/token.txt` (généré au premier lancement, `chmod 600`).
 
-## Docs
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system design
-- [`docs/CONNECT.md`](docs/CONNECT.md) — connect Claude/Cursor/VS Code/ChatGPT + Studio
-- [`docs/SECURITY.md`](docs/SECURITY.md) — permission model & boundaries
-- [`docs/TOOLS.md`](docs/TOOLS.md) — full tool catalogue
-- [`docs/ROBLOX.md`](docs/ROBLOX.md) — Studio integration details
-- [`docs/EXTENSION.md`](docs/EXTENSION.md) — browser extension
+## Ce que contient le projet
+
+| Composant | Techno | Description |
+| --- | --- | --- |
+| **Core** | Python 3.11+ / asyncio | registre d'outils, permissions L1–L4, validation, SQLite, audit, sandbox |
+| **Serveur MCP** | SDK MCP Python v2 (`MCPServer`) | stdio + Streamable HTTP, tools / resources / prompts, schémas générés depuis les signatures réelles |
+| **72 outils** | Python | system 4 · files 7 · project 2 · code 5 · knowledge 9 · web 5 · roblox 13 · browser 10 · bridge 2 · agent 10 · plugins 2 · automation 3 |
+| **Moteur d'agents** | Python asyncio | plan → recherche → exécution → test → correction, checkpoints, reprise, annulation, 7 rôles |
+| **Knowledge Engine** | SQLite FTS5 + TF-IDF | retrieval hybride avec citations (source, version, date, fiabilité), mémoire *personal / project / temp* |
+| **Roblox Studio** | connecteur MCP officiel + Rojo | proxy du Studio MCP officiel + couche disque `.luau`, analyseur Luau, plugin complémentaire |
+| **Desktop Bridge** | Python (Native Messaging) | hôte natif stdio ↔ core, commandes strictement limitées aux appels d'outils |
+| **Extension navigateur** | JS (MV3 Chromium + Firefox) | modes manual / contextual / developer / research, long-poll `/bridge/*` |
+| **Dashboard** | HTML/CSS/JS vanilla | Dashboard, MCP Explorer, AI Connections, Browser Extension, Roblox Studio, Knowledge Center, Agent Manager, Settings |
+| **Sécurité** | Python | 4 niveaux, token Bearer, sandbox workspace, sauvegardes, rédaction de secrets, audit |
+
+## Mission d'exemple
+
+> *« Crée-moi un jeu Roblox de combat arène avec 3 armes et un système de progression. »*
+
+L'agent inspecte le projet → recherche la documentation Roblox → planifie → construit les
+systèmes Luau → analyse et teste → corrige → présente un rapport sourcé. Un exemple jouable
+complet est fourni dans [`examples/roblox-combat-game/`](examples/roblox-combat-game/README.md).
+
+## Documentation
+
+| Document | Contenu |
+| --- | --- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | architecture Python, carte des modules, flux de communication |
+| [`docs/CONNECT.md`](docs/CONNECT.md) | connecter Claude Desktop/Code, Cursor, VS Code, clients HTTP |
+| [`docs/TOOLS.md`](docs/TOOLS.md) | catalogue **généré** des 72 outils (niveaux, paramètres) |
+| [`docs/SECURITY.md`](docs/SECURITY.md) | modèle de permissions, sandbox, secrets, audit |
+| [`docs/ROBLOX.md`](docs/ROBLOX.md) | Studio MCP officiel, Rojo, plugin, workflow de test |
+| [`docs/EXTENSION.md`](docs/EXTENSION.md) | extension, modes, Desktop Bridge, dépannage |
+| [`desktop-bridge/README.md`](desktop-bridge/README.md) | protocole Native Messaging et installation |
 
 ## Tests
+
 ```bash
-npm test   # node:test — registry, permissions, sandbox, knowledge, planner, executor, Luau, MCP protocol
+python -m pytest            # 63 tests : core, outils, agents, MCP, HTTP, bridge, Luau
+python -m omnibridge test   # auto-test runtime des outils
+python -m omnibridge diagnose
 ```
 
-## License
-MIT — see `LICENSE`.
+Les tests couvrent le protocole MCP réel (stdio et Streamable HTTP), la boucle autonome
+complète, la persistance, les refus de permission, le sandbox et le pont navigateur.
+
+## Licence
+
+MIT — voir [`LICENSE`](LICENSE).

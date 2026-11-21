@@ -1,27 +1,97 @@
-# Browser extension
+# Extension navigateur & Desktop Bridge
 
-MV3 extension (`extension/`) — Chromium (Chrome/Edge/Brave) + Firefox-compatible.
+## Rôle
 
-## Install
-1. Start OMNIBRIDGE: `npm start`.
-2. Chrome: `chrome://extensions` → Developer mode → **Load unpacked** → select `extension/`.
-   Firefox: `about:debugging` → This Firefox → Load Temporary Add-on → `extension/manifest.json`.
-3. Click the extension icon, paste the token from `~/.omnibridge/token.txt`, choose a mode, Connect.
-4. `browser_status` should report `connected: true`.
+L'extension transmet au core Python **uniquement ce que l'utilisateur autorise** depuis
+l'onglet actif. Elle exécute les commandes demandées par les outils `browser_*` ; elle ne
+décide jamais d'envoyer quoi que ce soit d'elle-même et ne lit ni cookies, ni mots de passe,
+ni champs de formulaire.
+
+Deux chemins de communication, vers **le même core Python** :
+
+```
+extension ──long-poll HTTP /bridge/*──▶ core Python (port 8765)
+extension ──native messaging──────────▶ bridge/native_host.py ──▶ core Python
+```
+
+## Installation (Chromium : Chrome, Edge, Brave, Chromium)
+
+1. `chrome://extensions` → activer le **mode développeur**.
+2. « Charger l'extension non empaquetée » → sélectionner le dossier `extension/`.
+3. Noter l'ID affiché (nécessaire pour le Desktop Bridge).
+4. Ouvrir le popup → coller le token (`~/.omnibridge/token.txt`) → choisir un mode →
+   **Connecter**.
+
+## Installation (Firefox)
+
+1. Copier `extension/manifest.firefox.json` en `extension/manifest.json` (remplace la version
+   Chromium ; `background.scripts` et `browser_specific_settings` sont adaptés).
+2. `about:debugging` → « Ce Firefox » → « Charger un module temporaire » → `manifest.json`.
+3. Mode permanent : empaqueter via `web-ext build` puis signer sur AMO.
 
 ## Modes
-- **manual**: user chooses what to share (selection, explicit actions).
-- **contextual**: active-tab context on demand.
-- **developer**: technical page info (links, structure).
-- **research**: document-oriented extraction.
 
-## How it works
-The extension long-polls `http://127.0.0.1:8765/bridge/poll` for commands queued by
-`browser_*` MCP tools, executes them in the active tab (content script), and posts
-results to `/bridge/result`. Native Messaging to the Desktop Bridge host
-(`desktop-bridge/`) is supported as a fallback channel.
+| Mode | Portée | Détail |
+| --- | --- | --- |
+| `manual` | fenêtre d'autorisation de 10 min | le popup doit être armé avant chaque session (« Autoriser 10 min ») |
+| `contextual` | onglet actif | texte, sélection, liens, recherche, capture d'écran |
+| `developer` | contextual + métadonnées | balises meta (hors secrets), scripts, compteurs, timings |
+| `research` | lecture seule | capture et infos techniques **refusées** |
 
-## Privacy
-The extension never reads cookies, passwords, or form fields. It only extracts
-page text, selection, links and screenshots — and only when a tool requests it
-or the user acts. See `extension/content.js`.
+Le core applique aussi ses propres règles : chaque commande passe par un outil `browser_*`
+de niveau 1 (lecture), quel que soit le mode.
+
+## Outils navigateur
+
+`browser_get_active_tab`, `browser_get_page_content`, `browser_get_selected_text`,
+`browser_get_links`, `browser_search_page`, `browser_capture_page`, `browser_get_page_info`,
+`browser_status` — plus `browser_pw_status` / `browser_pw_open` (Playwright optionnel).
+
+Sans extension connectée, ces outils renvoient une erreur explicite contenant la procédure
+d'installation : **aucune donnée de page n'est inventée**.
+
+## Desktop Bridge (Native Messaging, Python)
+
+```bash
+python -m omnibridge.bridge.install --extension-id <ID_DE_L_EXTENSION>
+python -m omnibridge.bridge.install --print        # afficher les manifests
+python -m omnibridge.bridge.install --uninstall
+```
+
+Ou via l'outil MCP / dashboard : `desktop_bridge_install` (niveau 3),
+`desktop_bridge_status` (niveau 1).
+
+Détails du protocole et du registre par OS : [`../desktop-bridge/README.md`](../desktop-bridge/README.md).
+
+Le host Python :
+- démarre le core s'il ne répond pas (`OMNIBRIDGE_BRIDGE_AUTOSTART=0` pour désactiver) ;
+- n'accepte que `ping | status | health | tools | call` ;
+- rejette `http`, `exec`, `shell` — ce n'est pas un proxy ouvert.
+
+## Vérification
+
+```bash
+omnibridge call --tool browser_status
+omnibridge call --tool desktop_bridge_status
+omnibridge call --tool browser_get_active_tab     # nécessite un onglet + extension connectée
+```
+
+Dans le navigateur : popup → « Statut du core » / « Lister les outils » (via le Desktop Bridge).
+
+## Dépannage
+
+| Symptôme | Solution |
+| --- | --- |
+| popup : « Non connecté » | core lancé ? `omnibridge --transport http` ; token correct ? |
+| `HTTP 401` | token absent/erroné dans le popup |
+| `Unknown or expired requestId` | commande expirée : relancer l'appel d'outil |
+| `Native host unavailable` | `python -m omnibridge.bridge.install --extension-id <id>` puis redémarrer le navigateur |
+| capture refusée | mode `research` — passer en `contextual` ou `developer` |
+| commande refusée « Autorisation requise » | mode `manual` : cliquer « Autoriser 10 min » |
+
+## Sécurité
+
+- Mode `manual` par défaut : aucune lecture sans autorisation explicite.
+- L'extension n'a pas d'accès disque ; le host n'a pas d'accès navigateur.
+- Le contenu de page est marqué `UNTRUSTED` et ne peut pas modifier les permissions.
+- Le token n'est jamais transmis aux pages web (stockage local de l'extension uniquement).
