@@ -24,10 +24,12 @@ function render(status) {
 }
 
 async function refresh() {
-  const stored = await chrome.storage.local.get(['server', 'token', 'mode']);
+  const stored = await chrome.storage.local.get(['server', 'token', 'mode', 'autoOpen']);
   $('#server').value = stored.server || 'http://127.0.0.1:8765';
   $('#token').value = stored.token || '';
   $('#mode').value = stored.mode || 'manual';
+  const all = await chrome.storage.local.get(['autoOpen']);
+  $('#autoOpen').checked = all.autoOpen !== false;
   render(await chrome.runtime.sendMessage({ type: 'status' }));
 }
 
@@ -71,6 +73,10 @@ $('#nativeTools').onclick = async () => {
   }
   const tools = (res.result.tools || []).map((t) => `L${t.level} ${t.name} — ${t.category}`);
   $('#tools').textContent = `${tools.length} outils\n` + tools.join('\n');
+};
+
+$('#autoOpen').onchange = async () => {
+  await chrome.storage.local.set({ autoOpen: $('#autoOpen').checked });
 };
 
 $('#mode').onchange = async () => {

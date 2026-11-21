@@ -26,6 +26,9 @@ def register_browser_tools(reg: Registry, bridge: BrowserBridge) -> None:
     async def search_page(args: dict, ctx):
         return await bridge.command("search_page", {"query": str(args["query"])})
 
+    async def get_last_assistant_message(args: dict, ctx):
+        return await bridge.command("get_last_assistant_message", {})
+
     async def get_page_info(args: dict, ctx):
         return await bridge.command("get_page_info", {})
 
@@ -61,6 +64,11 @@ def register_browser_tools(reg: Registry, bridge: BrowserBridge) -> None:
     reg.register(ToolDef("browser_search_page",
                          "Search text within the active page via the extension. Returns matching snippets.",
                          {"query": {"type": "string"}}, ["query"], 1, "browser", True, search_page))
+    reg.register(ToolDef("browser_get_last_assistant_message",
+                         "Read the last assistant reply on an AI chat page (ChatGPT, DeepSeek, Gemini, "
+                         "Copilot, Grok) via the extension's site adapters — no copy-paste needed. "
+                         "Combine with webai_run to execute the model's tool calls.",
+                         {}, [], 1, "browser", True, get_last_assistant_message))
     reg.register(ToolDef("browser_get_page_info",
                          "Get technical page info via the extension: meta tags (no tokens/secrets), scripts, "
                          "element counts, navigation timings, viewport. Developer-mode aid.",

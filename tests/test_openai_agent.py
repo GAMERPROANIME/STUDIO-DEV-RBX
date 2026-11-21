@@ -103,4 +103,9 @@ def test_provider_table_matches_documented_env_vars():
     assert PROVIDERS["deepseek"][1] == "DEEPSEEK_API_KEY"
     assert PROVIDERS["openai"][1] == "OPENAI_API_KEY"
     assert PROVIDERS["ollama"][1] == ""  # local, no key
-    assert all(v[0].startswith("http") for v in PROVIDERS.values())
+    # every named provider except `custom` ships a real base URL
+    assert all(v[0].startswith("http") for k, v in PROVIDERS.items() if k != "custom")
+    assert PROVIDERS["custom"][0] == ""  # requires --base-url
+    assert PROVIDERS["gemini"][1] == "GEMINI_API_KEY"
+    assert PROVIDERS["xai"][1] == "XAI_API_KEY"
+    assert PROVIDERS["ollama"][0].startswith("http://127.0.0.1")

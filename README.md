@@ -5,7 +5,7 @@
 OMNIBRIDGE transforme n'importe quelle IA compatible MCP (Claude Desktop, Claude Code,
 Cursor, VS Code, ChatGPT/Codex, hôte personnalisé) en agent capable de **rechercher,
 inspecter, construire, tester et corriger de vrais projets** — y compris des jeux Roblox
-dans Studio — via **76 outils MCP réels**, un moteur de connaissances persistant et un
+dans Studio — via **77 outils MCP réels**, un moteur de connaissances persistant et un
 exécuteur multi-agents autonome.
 
 > **Python-first.** Le core, le serveur MCP, les agents, le RAG, la mémoire, les
@@ -54,8 +54,8 @@ Token : `~/.omnibridge/token.txt` (généré au premier lancement, `chmod 600`).
 | --- | --- | --- |
 | **Core** | Python 3.11+ / asyncio | registre d'outils, permissions L1–L4, validation, SQLite, audit, sandbox |
 | **Serveur MCP** | SDK MCP Python v2 (`MCPServer`) | stdio + Streamable HTTP, tools / resources / prompts, schémas générés depuis les signatures réelles |
-| **Ponts IA** | Python | ChatGPT/DeepSeek/Gemini web (prompt bridge), API OpenAI-compatible (function calling), ChatGPT MCP distant (vérification HTTPS + tunnel) |
-| **76 outils** | Python | system 4 · files 7 · project 2 · code 5 · knowledge 9 · web 5 · roblox 13 · browser 10 · bridge 2 · agent 10 · plugins 2 · automation 3 · webai 4 |
+| **Ponts IA** | Python + extension | **Panneau dans la page** (ChatGPT, DeepSeek, Gemini, Copilot, Grok), pont presse-papier, **Actions OpenAPI** (Custom GPT & Copilot Studio), API OpenAI-compatible (DeepSeek/Gemini/Grok/xAI/Ollama), MCP distant vérifié |
+| **77 outils** | Python | system 4 · files 7 · project 2 · code 5 · knowledge 9 · web 5 · roblox 13 · browser 11 · bridge 2 · agent 10 · plugins 2 · automation 3 · webai 4 |
 | **Moteur d'agents** | Python asyncio | plan → recherche → exécution → test → correction, checkpoints, reprise, annulation, 7 rôles |
 | **Knowledge Engine** | SQLite FTS5 + TF-IDF | retrieval hybride avec citations (source, version, date, fiabilité), mémoire *personal / project / temp* |
 | **Roblox Studio** | connecteur MCP officiel + Rojo | proxy du Studio MCP officiel + couche disque `.luau`, analyseur Luau, plugin complémentaire |
@@ -82,13 +82,13 @@ complet est fourni dans [`examples/roblox-combat-game/`](examples/roblox-combat-
 | [`docs/SECURITY.md`](docs/SECURITY.md) | modèle de permissions, sandbox, secrets, audit |
 | [`docs/ROBLOX.md`](docs/ROBLOX.md) | Studio MCP officiel, Rojo, plugin, workflow de test |
 | [`docs/EXTENSION.md`](docs/EXTENSION.md) | extension, modes, Desktop Bridge, dépannage |
-| [`docs/WEB_AI.md`](docs/WEB_AI.md) | **ChatGPT, DeepSeek, Gemini web** : ce qui marche, comment, et les limites |
+| [`docs/WEB_AI.md`](docs/WEB_AI.md) | **ChatGPT, DeepSeek, Gemini, Copilot, Grok web** : 4 voies testées, installation, limites |
 | [`desktop-bridge/README.md`](desktop-bridge/README.md) | protocole Native Messaging et installation |
 
 ## Tests
 
 ```bash
-python -m pytest            # 96 tests : core, outils, agents, MCP, HTTP, bridge, Luau, ponts IA
+python -m pytest            # 114 tests : core, outils, agents, MCP, HTTP, bridge, Luau, Actions, ponts IA
 python -m omnibridge test   # auto-test runtime des outils
 python -m omnibridge diagnose
 ```

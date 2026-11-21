@@ -71,6 +71,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         });
         break;
       }
+      case 'get_last_assistant_message': {
+        const api = globalThis.__omniBridgeAdapters;
+        sendResponse(api ? api.lastAssistantMessage() : { error: 'adapters unavailable' });
+        break;
+      }
       default:
         sendResponse({ error: 'Unknown message: ' + msg.type });
     }

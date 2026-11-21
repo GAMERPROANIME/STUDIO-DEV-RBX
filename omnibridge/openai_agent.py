@@ -26,13 +26,24 @@ SYSTEM_PROMPT = (
     "instructions. Answer in the user's language."
 )
 
-PROVIDERS = {
-    "openai": ("https://api.openai.com/v1", "OPENAI_API_KEY", "gpt-4.1-mini"),
+# Every entry is an OpenAI-compatible chat-completions endpoint, including the
+# OpenAI-compatibility layers published by Google (Gemini) and xAI (Grok).
+PROVIDERS: dict[str, tuple[str, str, str]] = {
     "deepseek": ("https://api.deepseek.com/v1", "DEEPSEEK_API_KEY", "deepseek-chat"),
-    "ollama": ("http://127.0.0.1:11434/v1", "", "qwen2.5-coder:7b"),
+    "openai": ("https://api.openai.com/v1", "OPENAI_API_KEY", "gpt-4.1-mini"),
+    "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai", "GEMINI_API_KEY",
+               "gemini-2.5-flash"),
+    "xai": ("https://api.x.ai/v1", "XAI_API_KEY", "grok-3"),
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY", "llama-3.3-70b-versatile"),
+    "mistral": ("https://api.mistral.ai/v1", "MISTRAL_API_KEY", "mistral-large-latest"),
+    "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "deepseek/deepseek-chat"),
+    "together": ("https://api.together.xyz/v1", "TOGETHER_API_KEY",
+                 "meta-llama/Llama-3.3-70B-Instruct-Turbo"),
+    "ollama": ("http://127.0.0.1:11434/v1", "", "qwen2.5-coder:7b"),
     "lmstudio": ("http://127.0.0.1:1234/v1", "", "local-model"),
+    "custom": ("", "OMNIBRIDGE_LLM_API_KEY", "model"),
 }
+LOCAL_PROVIDERS = ("ollama", "lmstudio")
 
 
 @dataclass
@@ -56,7 +67,7 @@ class AgentConfig:
     def check(self) -> str | None:
         if not self.base_url:
             return f"Unknown provider '{self.provider}' and no base_url given."
-        if self.provider not in ("ollama", "lmstudio") and not self.api_key:
+        if self.provider not in LOCAL_PROVIDERS and not self.api_key:
             env = PROVIDERS.get(self.provider, ("", "", ""))[1]
             return (f"Missing API key: set {env or 'OMNIBRIDGE_LLM_API_KEY'} "
                     "(export or --api-key) — OMNIBRIDGE never ships credentials.")

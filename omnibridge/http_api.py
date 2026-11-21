@@ -19,9 +19,11 @@ from .core.app import OmniBridge
 from .core.logger import log
 from .core.permissions import PermissionDenied
 from .mcp_server import build_mcp_server
+from .openapi_actions import build_actions_openapi
 from .webai import build_prompt, check_remote_mcp, openai_tools, run_calls
 
-EXEMPT_PATHS = {"/", "/api/health", "/favicon.ico", "/index.html", "/style.css", "/app.js", "/docs", "/openapi.json"}
+EXEMPT_PATHS = {"/", "/api/health", "/favicon.ico", "/index.html", "/style.css", "/app.js", "/docs",
+                "/openapi.json", "/openapi/actions.json"}
 
 
 class CallRequest(BaseModel):
@@ -196,6 +198,25 @@ def create_http_app(bridge: OmniBridge, cfg: Config | None = None):
     @app.get("/api/browser/status", tags=["browser"])
     async def browser_status():
         return bridge.browser.status()
+
+    # ---- OpenAPI actions: ChatGPT Custom GPT Actions, Copilot Studio, any OpenAPI agent ----
+    @app.get("/openapi/actions.json", include_in_schema=False)
+    async def actions_openapi(request: Request):
+        base = cfg.public_url or str(request.base_url).rstrip("/")
+        return build_actions_openapi(bridge, base)
+
+    @app.post("/api/actions/{tool_name}", tags=["actions"])
+    async def run_action(tool_name: str, body: dict[str, Any] = Body(default_factory=dict)):
+        tool = bridge.registry.get(tool_name)
+        if tool is None:
+            raise HTTPException(404, detail={"error": "unknown_tool", "message":
+                                f"Unknown tool '{tool_name}'. GET /api/tools for the catalogue."})
+        try:
+            confirm = bool(body.pop("confirm", False))
+            result = await bridge.call_tool(tool_name, body, confirmed=confirm)
+            return {"ok": True, "tool": tool_name, "result": result}
+        except Exception as e:  # noqa: BLE001
+            raise _error(e) from e
 
     @app.get("/api/webai/prompt", tags=["webai"])
     async def webai_prompt(budgetChars: int = 7000, categories: str = ""):

@@ -184,6 +184,8 @@ async function execute(command) {
         return { ok: true, data: await sendToTab(tab.id, { type: 'search_page', query: String(args.query || '') }) };
       case 'get_page_info':
         return { ok: true, data: await sendToTab(tab.id, { type: 'get_page_info' }) };
+      case 'get_last_assistant_message':
+        return { ok: true, data: await sendToTab(tab.id, { type: 'get_last_assistant_message' }) };
       case 'capture_page': {
         const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
         return { ok: true, data: { format: 'png', base64: dataUrl.split(',')[1] || '' } };

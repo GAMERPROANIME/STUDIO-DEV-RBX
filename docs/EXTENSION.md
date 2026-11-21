@@ -41,11 +41,28 @@ extension ──native messaging──────────▶ bridge/native_
 Le core applique aussi ses propres règles : chaque commande passe par un outil `browser_*`
 de niveau 1 (lecture), quel que soit le mode.
 
+## Panneau flottant sur les sites d'IA (sans MCP)
+
+Le panneau s'injecte sur **chatgpt.com, chat.deepseek.com, gemini.google.com,
+copilot.microsoft.com, grok.com**. Il permet, sans quitter la conversation :
+
+| Bouton | Effet |
+| --- | --- |
+| Prompt | copie le prompt OMNIBRIDGE (catalogue réel) dans le presse-papier |
+| Lire la réponse | lit la dernière réponse de l'assistant dans la page (adaptateurs par site) |
+| Exécuter | exécute réellement les appels JSON via le core, copie le bloc de résultats |
+| Copier | recopie le bloc à recoller |
+
+Activation : popup → case « Panneau flottant sur ChatGPT / DeepSeek / Gemini / Copilot / Grok ».
+Aucune frappe automatique, aucun envoi de message, aucune lecture de cookies : chaque action
+est un clic. Détails et dépannage : [`WEB_AI.md`](WEB_AI.md).
+
 ## Outils navigateur
 
 `browser_get_active_tab`, `browser_get_page_content`, `browser_get_selected_text`,
 `browser_get_links`, `browser_search_page`, `browser_capture_page`, `browser_get_page_info`,
-`browser_status` — plus `browser_pw_status` / `browser_pw_open` (Playwright optionnel).
+`browser_get_last_assistant_message`, `browser_status` — plus `browser_pw_status` /
+`browser_pw_open` (Playwright optionnel).
 
 Sans extension connectée, ces outils renvoient une erreur explicite contenant la procédure
 d'installation : **aucune donnée de page n'est inventée**.

@@ -55,6 +55,7 @@ class Config:
     web_allowed_hosts: list[str] = field(default_factory=list)
     dashboard_dir: Path = field(default_factory=lambda: Path.cwd() / "dashboard")
     plugins_dir: Path = field(default_factory=lambda: Path.cwd() / "plugins")
+    public_url: str = ""  # public HTTPS base URL when exposed through a tunnel
     require_token: bool = True
 
     def ensure_token(self) -> str:
@@ -92,6 +93,7 @@ def load_config(**overrides) -> Config:
         web_allowed_hosts=[h.strip() for h in os.environ.get("OMNIBRIDGE_WEB_ALLOWED_HOSTS", "").split(",") if h.strip()],
         dashboard_dir=Path(os.environ.get("OMNIBRIDGE_DASHBOARD_DIR", str(root / "dashboard"))).expanduser().resolve(),
         plugins_dir=Path(os.environ.get("OMNIBRIDGE_PLUGINS_DIR", str(root / "plugins"))).expanduser().resolve(),
+        public_url=os.environ.get("OMNIBRIDGE_PUBLIC_URL", "").rstrip("/"),
         require_token=os.environ.get("OMNIBRIDGE_REQUIRE_TOKEN", "1") != "0",
     )
     for k, v in overrides.items():

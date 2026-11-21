@@ -1,6 +1,6 @@
 # Catalogue des outils (généré depuis le registre)
 
-**76 outils réels**, enregistrés dans `omnibridge/core/registry.py` et exposés par le
+**77 outils réels**, enregistrés dans `omnibridge/core/registry.py` et exposés par le
 serveur MCP Python. Ce fichier est généré depuis le code : `python tools/gen_tool_docs.py`.
 
 Niveaux : **L1** lecture · **L2** assistance (sauvegarde + audit) · **L3** automatisation contrôlée · **L4** sensible (`confirm=true` obligatoire).
@@ -85,12 +85,13 @@ Niveaux : **L1** lecture · **L2** assistance (sauvegarde + audit) · **L3** aut
 | `roblox_search_assets` | 1 | R | Search the Roblox Creator Store via the official MCP server when available. Otherwise returns setup instructions — never fakes results. | `query`, `assetType`? |
 | `roblox_search_scripts` | 1 | R | Search Luau script contents in a Rojo project on disk (regex). | `pattern`, `path`?, `maxResults`? |
 
-## browser (10)
+## browser (11)
 
 | Outil | Niv. | R/W | Description | Paramètres |
 | --- | --- | --- | --- | --- |
 | `browser_capture_page` | 1 | R | Capture a screenshot of the active tab via the extension (returns base64 PNG). | — |
 | `browser_get_active_tab` | 1 | R | Get the active browser tab (URL, title) via the extension. Requires the OMNIBRIDGE extension connected. | — |
+| `browser_get_last_assistant_message` | 1 | R | Read the last assistant reply on an AI chat page (ChatGPT, DeepSeek, Gemini, Copilot, Grok) via the extension's site adapters — no copy-paste needed. Combine with webai_run to execute the model's tool calls. | — |
 | `browser_get_links` | 1 | R | List links on the active page via the extension (href + text). | `limit`? |
 | `browser_get_page_content` | 1 | R | Get the text content of the active page via the extension (user-authorized context). | `maxChars`? |
 | `browser_get_page_info` | 1 | R | Get technical page info via the extension: meta tags (no tokens/secrets), scripts, element counts, navigation timings, viewport. Developer-mode aid. | — |
