@@ -152,8 +152,40 @@ async def cmd_test(cfg: Config, args: argparse.Namespace) -> int:
     return 0 if result["ok"] else 1
 
 
+async def cmd_webai(cfg: Config, args: argparse.Namespace) -> int:
+    from .webai import build_prompt, check_remote_mcp, openai_tools, run_calls
+
+    bridge = OmniBridge(cfg)
+    try:
+        if args.check:
+            result = await check_remote_mcp(args.check, token=args.token or cfg.token)
+            _print(result)
+            return 0 if result["chatgptReady"] else 1
+        if args.openai_tools:
+            _print({"count": bridge.registry.size, "tools": openai_tools(bridge)})
+            return 0
+        if args.run:
+            text = sys.stdin.read() if args.run == "-" else Path(args.run).expanduser().read_text(encoding="utf-8")
+            result = await run_calls(bridge, text, confirm=args.confirm)
+            print(result.get("block") or f"ERROR: {result.get('error')}", end="" if result.get("block") else "\n")
+            if result.get("parseErrors"):
+                print("Parse warnings: " + "; ".join(result["parseErrors"]), file=sys.stderr)
+            return 0 if result["ok"] else 1
+        categories = [c.strip() for c in (args.categories or "").split(",") if c.strip()] or None
+        prompt = build_prompt(bridge, args.budget or 7000, categories)
+        if args.json:
+            _print(prompt)
+        else:
+            print(prompt["prompt"])
+            print(f"\n<!-- {prompt['chars']} chars · {len(prompt['tools'])} tools · "
+                  f"{prompt['toolsOmitted']} omitted -->", file=sys.stderr)
+        return 0
+    finally:
+        await bridge.close()
+
+
 COMMANDS = {"serve": cmd_serve, "diagnose": cmd_diagnose, "init": cmd_init,
-            "tools": cmd_tools, "call": cmd_call, "test": cmd_test}
+            "tools": cmd_tools, "call": cmd_call, "test": cmd_test, "webai": cmd_webai}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -170,6 +202,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--args", default=None, help="JSON arguments for the 'call' command")
     p.add_argument("--confirm", action="store_true", help="confirm a level-4 operation")
     p.add_argument("--category", default=None, help="filter for the 'tools' command")
+    p.add_argument("--prompt", action="store_true", help="webai: print the paste-ready prompt")
+    p.add_argument("--run", metavar="FILE", default=None,
+                   help="webai: execute the tool calls found in FILE ('-' reads stdin)")
+    p.add_argument("--check", metavar="URL", default=None,
+                   help="webai: verify a public HTTPS MCP endpoint (ChatGPT readiness)")
+    p.add_argument("--openai-tools", action="store_true",
+                   help="webai: print OpenAI-compatible function definitions")
+    p.add_argument("--budget", type=int, default=None, help="webai: prompt character budget")
+    p.add_argument("--categories", default=None, help="webai: comma-separated category filter")
+    p.add_argument("--token", default=None, help="token for --check")
     p.add_argument("--json", action="store_true", help="machine-readable output")
     return p
 

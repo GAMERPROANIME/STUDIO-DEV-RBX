@@ -19,6 +19,7 @@ from .core.app import OmniBridge
 from .core.logger import log
 from .core.permissions import PermissionDenied
 from .mcp_server import build_mcp_server
+from .webai import build_prompt, check_remote_mcp, openai_tools, run_calls
 
 EXEMPT_PATHS = {"/", "/api/health", "/favicon.ico", "/index.html", "/style.css", "/app.js", "/docs", "/openapi.json"}
 
@@ -195,6 +196,38 @@ def create_http_app(bridge: OmniBridge, cfg: Config | None = None):
     @app.get("/api/browser/status", tags=["browser"])
     async def browser_status():
         return bridge.browser.status()
+
+    @app.get("/api/webai/prompt", tags=["webai"])
+    async def webai_prompt(budgetChars: int = 7000, categories: str = ""):
+        cats = [c.strip() for c in categories.split(",") if c.strip()] or None
+        return build_prompt(bridge, max(1500, min(budgetChars, 40000)), cats)
+
+    @app.post("/api/webai/run", tags=["webai"])
+    async def webai_run(body: dict = Body(...)):
+        reply = str(body.get("reply", ""))
+        if not reply.strip():
+            raise HTTPException(400, "reply is required")
+        return await run_calls(bridge, reply, confirm=bool(body.get("confirm", False)))
+
+    @app.get("/api/tools/openai", tags=["webai"])
+    async def tools_openai():
+        tools = openai_tools(bridge)
+        return {"count": len(tools), "format": "openai-chat-completions", "tools": tools}
+
+    @app.get("/api/webai/providers", tags=["webai"])
+    async def webai_providers():
+        from .openai_agent import PROVIDERS
+
+        return {"providers": [{"name": k, "baseUrl": v[0], "apiKeyEnv": v[1],
+                               "defaultModel": v[2], "needsKey": bool(v[1])}
+                              for k, v in PROVIDERS.items()]}
+
+    @app.post("/api/webai/check", tags=["webai"])
+    async def webai_check(body: dict = Body(...)):
+        url = str(body.get("url", "")).strip()
+        if not url:
+            raise HTTPException(400, "url is required")
+        return await check_remote_mcp(url, str(body.get("token", "")))
 
     @app.get("/api/agents/roles", tags=["agent"])
     async def roles():

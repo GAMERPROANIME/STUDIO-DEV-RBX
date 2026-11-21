@@ -168,7 +168,86 @@ async function loadConnections() {
   };
   $('#mcpHttpConfig').textContent = JSON.stringify(httpConfig, null, 2);
   $('#mcpStdioConfig').textContent = JSON.stringify(stdioConfig, null, 2);
+
+  try {
+    const providers = await api('/api/webai/providers');
+    $('#webaiProviders').innerHTML = providers.providers.map((p) =>
+      card(p.name, p.needsKey ? 'clé requise' : 'local', p.needsKey ? 'warn' : 'ok',
+        `${p.baseUrl} · ${p.defaultModel}${p.apiKeyEnv ? ' · ' + p.apiKeyEnv : ''}`)).join('');
+    $('#webaiCommand').textContent =
+      '# DeepSeek / OpenAI / Groq (clé dans l\'environnement)\n' +
+      'export DEEPSEEK_API_KEY=...\n' +
+      'python examples/openai-compatible-agent.py --provider deepseek \\\n' +
+      '  "Inspecte ce projet et liste les TODO"\n\n' +
+      '# Ollama local (sans clé)\n' +
+      'ollama serve && ollama pull qwen2.5-coder:7b\n' +
+      'python examples/openai-compatible-agent.py --provider ollama --model qwen2.5-coder:7b "Analyse src/"';
+  } catch (e) {
+    $('#webaiProviders').innerHTML = card('Ponts IA', 'erreur', 'err', e.message);
+  }
 }
+
+/* ---------------- universal bridges (chat-only AI + OpenAI-compatible) ---------------- */
+
+let webaiBlock = '';
+
+$('#webaiGen').onclick = async () => {
+  const cats = $('#webaiPreset').value;
+  $('#webaiPromptInfo').textContent = 'génération…';
+  try {
+    const res = await api('/api/webai/prompt?budgetChars=7000' + (cats ? `&categories=${encodeURIComponent(cats)}` : ''));
+    $('#webaiPrompt').value = res.prompt;
+    $('#webaiPromptInfo').textContent = `${res.chars} caractères · ${res.tools.length} outils` +
+      (res.toolsOmitted ? ` · ${res.toolsOmitted} omis` : '');
+  } catch (e) {
+    $('#webaiPromptInfo').textContent = 'erreur : ' + e.message;
+  }
+};
+
+$('#webaiCopyPrompt').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($('#webaiPrompt').value);
+    $('#webaiPromptInfo').textContent = 'prompt copié — collez-le dans la conversation';
+  } catch {
+    $('#webaiPrompt').select();
+    document.execCommand('copy');
+  }
+};
+
+$('#webaiRun').onclick = async () => {
+  const reply = $('#webaiReply').value.trim();
+  if (!reply) { $('#webaiResult').textContent = 'Collez d\'abord la réponse du modèle.'; return; }
+  $('#webaiResult').textContent = 'Exécution des appels…';
+  try {
+    const res = await api('/api/webai/run', {
+      method: 'POST',
+      body: JSON.stringify({ reply, confirm: $('#webaiConfirm').checked }),
+    });
+    webaiBlock = res.block || '';
+    $('#webaiResult').textContent = webaiBlock || (res.error || JSON.stringify(res, null, 2));
+    refreshAll();
+  } catch (e) {
+    $('#webaiResult').textContent = 'Erreur : ' + e.message;
+  }
+};
+
+$('#webaiCopyResult').onclick = async () => {
+  if (!webaiBlock) { $('#webaiResult').textContent = 'Rien à copier — exécutez d\'abord des appels.'; return; }
+  try { await navigator.clipboard.writeText(webaiBlock); $('#webaiPromptInfo').textContent = 'bloc résultat copié'; }
+  catch { $('#webaiResult').select(); document.execCommand('copy'); }
+};
+
+$('#webaiCheck').onclick = async () => {
+  const url = $('#webaiRemoteUrl').value.trim();
+  if (!url) return;
+  $('#webaiCheckResult').textContent = 'Vérification…';
+  try {
+    const res = await api('/api/webai/check', { method: 'POST', body: JSON.stringify({ url }) });
+    $('#webaiCheckResult').textContent = JSON.stringify(res, null, 2);
+  } catch (e) {
+    $('#webaiCheckResult').textContent = 'Erreur : ' + e.message;
+  }
+};
 
 /* ---------------- extension ---------------- */
 

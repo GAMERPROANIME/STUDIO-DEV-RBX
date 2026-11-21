@@ -131,6 +131,18 @@ OMNIBRIDGE_PERMISSION_LEVEL=4   # sensible : process_run, file_delete (confirm=t
 
 Un refus est explicite (`permission denied: ...`) et journalisé dans l'audit.
 
+## Autres IA (ChatGPT web, DeepSeek web, Gemini, Copilot…)
+
+Ces interfaces ne parlent pas MCP et ne peuvent pas joindre `localhost`. Trois chemins réels :
+
+| Besoin | Commande |
+| --- | --- |
+| Chat web sans MCP (copier/coller) | `omnibridge webai --prompt` puis `omnibridge webai --run reponse.md` |
+| API OpenAI-compatible (DeepSeek, OpenAI, Groq, Ollama) | `python examples/openai-compatible-agent.py "…"` |
+| ChatGPT Developer Mode (MCP distant HTTPS) | tunnel + `omnibridge webai --check https://…/mcp` |
+
+Détails, prérequis et limites : [`WEB_AI.md`](WEB_AI.md).
+
 ## Dépannage
 
 | Symptôme | Cause / solution |

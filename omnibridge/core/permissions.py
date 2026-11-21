@@ -25,11 +25,12 @@ class ToolDef:
 
 
 class ToolContext:
-    def __init__(self, config: Config, db, call_tool, confirmed: bool = False):
+    def __init__(self, config: Config, db, call_tool, confirmed: bool = False, bridge=None):
         self.config = config
         self.db = db
         self.call_tool = call_tool  # async (name, args, confirmed=False) -> Any
         self.confirmed = confirmed
+        self.bridge = bridge  # the OmniBridge container (registry, knowledge, executor…)
 
 
 class PermissionDenied(Exception):
@@ -61,3 +62,12 @@ def check_permission(cfg: Config, tool: ToolDef, args: dict[str, Any]) -> None:
         f"but the server is configured for level {cfg.permission_level}. "
         "Raise OMNIBRIDGE_PERMISSION_LEVEL or use a lower-level tool."
     )
+
+
+def effective_params(tool: "ToolDef") -> dict[str, dict[str, Any]]:
+    """Declared parameters, plus `confirm` for level-4 tools so the schema tells the truth."""
+    params = dict(tool.params)
+    if tool.level >= 4 and "confirm" not in params:
+        params["confirm"] = {"type": "boolean", "default": False,
+                             "description": "Required: explicitly confirm this sensitive operation."}
+    return params

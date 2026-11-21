@@ -10,16 +10,20 @@ from __future__ import annotations
 import json
 from typing import Any, Awaitable, Callable
 
+from typing import TYPE_CHECKING
+
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from .config import Config
-from .core.app import OmniBridge
-from .core.permissions import PermissionDenied, ToolDef
+from .core.permissions import PermissionDenied, ToolDef, effective_params
 from .core.registry import Registry
 from .core.validation import ValidationError
 from .roblox.luau import LUAU_KNOWLEDGE
+
+if TYPE_CHECKING:
+    from .core.app import OmniBridge
 
 INSTRUCTIONS = """\
 OMNIBRIDGE AI — Universal MCP orchestrator (Python core).
@@ -43,15 +47,6 @@ Security rules:
 
 _TYPE_NAMES = {"string": "str", "integer": "int", "number": "float", "boolean": "bool",
                "array": "list", "object": "dict"}
-
-
-def effective_params(tool: ToolDef) -> dict[str, dict[str, Any]]:
-    """Declared params, plus `confirm` for level-4 tools so the schema tells the truth."""
-    params = dict(tool.params)
-    if tool.level >= 4 and "confirm" not in params:
-        params["confirm"] = {"type": "boolean", "default": False,
-                             "description": "Required: explicitly confirm this sensitive operation."}
-    return params
 
 
 def _build_fn(tool: ToolDef, bridge: OmniBridge) -> Callable[..., Awaitable[Any]]:
@@ -97,7 +92,7 @@ def _make_dispatcher(bridge: OmniBridge) -> Callable[..., Awaitable[Any]]:
     return dispatch
 
 
-def build_mcp_server(bridge: OmniBridge, cfg: Config | None = None) -> MCPServer:
+def build_mcp_server(bridge: "OmniBridge", cfg: Config | None = None) -> MCPServer:
     cfg = cfg or bridge.cfg
     mcp: MCPServer = MCPServer(
         name="omnibridge-ai",

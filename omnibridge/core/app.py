@@ -20,6 +20,7 @@ from ..tools.plugins import register_plugin_tools
 from ..tools.roblox import register_roblox_tools
 from ..tools.system import register_system_tools
 from ..tools.web import register_web_tools
+from ..tools.webai import register_webai_tools
 from .db import Db
 from .logger import log
 from .permissions import PermissionDenied, ToolContext, check_permission
@@ -51,6 +52,7 @@ class OmniBridge:
         register_bridge_tools(reg, self.browser.status)
         register_plugin_tools(reg)
         register_automation_tools(reg)
+        register_webai_tools(reg)
         register_system_tools(reg, self.roblox.info, self.browser.status, self.knowledge.stats)
         register_agent_tools(reg, self.executor)
         log.info("omnibridge core ready", extra={"tools": reg.size, "categories": list(reg.categories())})
@@ -63,7 +65,8 @@ class OmniBridge:
         if confirmed and tool.level == 4:
             normalized["confirm"] = True
         check_permission(self.cfg, tool, normalized)
-        ctx = ToolContext(self.cfg, self.db, self.call_tool, confirmed=normalized.get("confirm") is True)
+        ctx = ToolContext(self.cfg, self.db, self.call_tool,
+                          confirmed=normalized.get("confirm") is True, bridge=self)
         try:
             result = tool.handler(normalized, ctx) if tool.handler else None
             if inspect.isawaitable(result):

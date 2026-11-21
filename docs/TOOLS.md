@@ -1,6 +1,6 @@
 # Catalogue des outils (généré depuis le registre)
 
-**72 outils réels**, enregistrés dans `omnibridge/core/registry.py` et exposés par le
+**76 outils réels**, enregistrés dans `omnibridge/core/registry.py` et exposés par le
 serveur MCP Python. Ce fichier est généré depuis le code : `python tools/gen_tool_docs.py`.
 
 Niveaux : **L1** lecture · **L2** assistance (sauvegarde + audit) · **L3** automatisation contrôlée · **L4** sensible (`confirm=true` obligatoire).
@@ -136,6 +136,15 @@ Niveaux : **L1** lecture · **L2** assistance (sauvegarde + audit) · **L3** aut
 | `process_list_actions` | 1 | R | List the allowlisted process actions available to process_run, with their exact commands. | — |
 | `process_run` | 4 | W | Run an allowlisted development command (pytest, npm build/test/install, rojo, git status/log) inside the workspace. No shell, no arbitrary arguments. Level 4: requires confirm=true. | `action`, `path`?, `timeoutMs`?, `confirm`? |
 | `system_self_test` | 1 | R | Run a real end-to-end self test: invokes core tools for real and reports per-tool pass/fail. Use to verify the installation actually works. | — |
+
+## webai (4)
+
+| Outil | Niv. | R/W | Description | Paramètres |
+| --- | --- | --- | --- | --- |
+| `webai_openai_tools` | 1 | R | Export all OMNIBRIDGE tools as OpenAI/DeepSeek/Ollama function-calling definitions, for any OpenAI-compatible chat-completions API. | `category`? |
+| `webai_prompt` | 1 | R | Build a paste-ready system prompt that lets a chat-only AI (ChatGPT web, DeepSeek web, Gemini, Copilot…) call OMNIBRIDGE tools through a JSON protocol. Includes the real tool catalogue within a character budget. | `budgetChars`?, `categories`? |
+| `webai_providers` | 1 | R | List supported OpenAI-compatible providers with their base URL, key environment variable and default model, plus how to run the agent loop. | — |
+| `webai_run` | 3 | W | Execute the tool calls contained in a chat model's reply and return a would-paste-back block of real results. Each call is individually permission-checked; level-4 tools still require confirm. | `reply`, `confirm`? |
 
 ---
 

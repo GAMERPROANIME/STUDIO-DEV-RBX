@@ -58,6 +58,47 @@
     <h3>Configuration MCP standard (stdio)</h3>
     <pre id="mcpStdioConfig" class="panel"></pre>
     <p class="muted">Le token est requis pour HTTP. Pour stdio, le client lance le processus : aucune authentification réseau n'est nécessaire.</p>
+
+    <h3>ChatGPT web · DeepSeek web · Gemini · Copilot (sans MCP)</h3>
+    <p class="muted">Ces interfaces ne parlent pas MCP et ne peuvent pas joindre <code>localhost</code>.
+      Pont presse-papier : générez le prompt, collez-le dans la conversation, puis collez ici la
+      réponse JSON du modèle — OMNIBRIDGE l'exécute réellement et vous rend un bloc de résultats à recoller.</p>
+    <div class="row">
+      <button id="webaiGen">Générer le prompt</button>
+      <button id="webaiCopyPrompt" class="ghost">Copier le prompt</button>
+      <select id="webaiPreset">
+        <option value="">Tous les outils</option>
+        <option value="roblox">Roblox</option>
+        <option value="roblox,code">Roblox + code</option>
+        <option value="files,code,project">Fichiers + code</option>
+        <option value="agent,knowledge">Agents + connaissances</option>
+      </select>
+      <span id="webaiPromptInfo" class="muted"></span>
+    </div>
+    <textarea id="webaiPrompt" rows="9" readonly placeholder="Le prompt apparaît ici"></textarea>
+    <label class="muted">Réponse du modèle (JSON)</label>
+    <textarea id="webaiReply" rows="5" placeholder='&lt;div&gt;{"calls": [{"tool": "file_list", "args": {"path": "."}}]}&lt;/div&gt;'></textarea>
+    <div class="row">
+      <button id="webaiRun">Exécuter les appels</button>
+      <button id="webaiCopyResult" class="ghost">Copier le bloc résultat</button>
+      <label class="check"><input id="webaiConfirm" type="checkbox"> Autoriser les appels niveau 4</label>
+    </div>
+    <pre id="webaiResult" class="panel"></pre>
+
+    <h3>API OpenAI-compatible (DeepSeek, OpenAI, Groq, Ollama, LM Studio)</h3>
+    <p class="muted">Function calling standard : les 76 outils sont exportés en JSON Schema par
+      <code>GET /api/tools/openai</code>. La boucle agent est en Python, la clé reste dans votre environnement.</p>
+    <div id="webaiProviders" class="cards"></div>
+    <pre id="webaiCommand" class="panel"></pre>
+
+    <h3>ChatGPT Developer Mode (MCP distant)</h3>
+    <p class="muted">ChatGPT n'accepte qu'une URL <strong>HTTPS publique</strong> (jamais <code>localhost</code>),
+      avec Developer Mode activé (offres payantes). Exposez le core via un tunnel puis vérifiez-le ici.</p>
+    <div class="row">
+      <input id="webaiRemoteUrl" placeholder="https://votre-tunnel.trycloudflare.com/mcp" style="flex:1">
+      <button id="webaiCheck">Vérifier l'endpoint</button>
+    </div>
+    <pre id="webaiCheckResult" class="panel"></pre>
   </section>
 
   <section id="tab-extension" class="tab">
