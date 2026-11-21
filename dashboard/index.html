@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OMNIBRIDGE AI — Dashboard</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="logo">◈ OMNIBRIDGE <span>AI</span></div>
+  <nav id="tabs">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="mcp">MCP Explorer</button>
+    <button data-tab="roblox">Roblox Studio</button>
+    <button data-tab="agents">Agent Manager</button>
+    <button data-tab="knowledge">Knowledge Center</button>
+    <button data-tab="audit">Audit</button>
+  </nav>
+  <div class="token-box">
+    <input id="token" type="password" placeholder="Token local (~/.omnibridge/token.txt)">
+    <button id="saveToken">Connecter</button>
+  </div>
+</header>
+<main>
+  <section id="tab-dashboard" class="tab active">
+    <div class="cards" id="healthCards"></div>
+    <h2>État des connexions</h2>
+    <pre id="healthDetail" class="panel"></pre>
+  </section>
+  <section id="tab-mcp" class="tab">
+    <h2>Outils MCP (<span id="toolCount">0</span>)</h2>
+    <div class="filters" id="catFilters"></div>
+    <div id="toolList" class="tool-grid"></div>
+  </section>
+  <section id="tab-roblox" class="tab">
+    <h2>Roblox Studio</h2>
+    <pre id="robloxDetail" class="panel"></pre>
+    <h3>Tester un outil</h3>
+    <div class="row">
+      <select id="robloxTool"></select>
+      <input id="robloxArgs" placeholder='Arguments JSON ex: {"path":"."}' style="flex:1">
+      <button id="runRobloxTool">Exécuter</button>
+    </div>
+    <pre id="robloxResult" class="panel"></pre>
+  </section>
+  <section id="tab-agents" class="tab">
+    <h2>Agent Manager</h2>
+    <div class="row">
+      <input id="goal" placeholder="Objectif (ex: Crée un jeu de combat arène Roblox)" style="flex:1">
+      <button id="startTask">Lancer la tâche</button>
+    </div>
+    <pre id="taskResult" class="panel"></pre>
+    <h3>Tâches récentes</h3>
+    <div id="taskList"></div>
+  </section>
+  <section id="tab-knowledge" class="tab">
+    <h2>Knowledge Center</h2>
+    <pre id="knowledgeDetail" class="panel"></pre>
+    <div class="row">
+      <input id="kbQuery" placeholder="Rechercher dans la base de connaissances" style="flex:1">
+      <button id="kbSearch">Rechercher</button>
+    </div>
+    <pre id="kbResult" class="panel"></pre>
+  </section>
+  <section id="tab-audit" class="tab">
+    <h2>Journal d'audit</h2>
+    <pre id="auditDetail" class="panel"></pre>
+  </section>
+</main>
+<footer>OMNIBRIDGE AI · Universal MCP · <span id="footerStatus">non connecté</span></footer>
+<script src="app.js"></script>
+</body>
+</html>

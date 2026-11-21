@@ -1,0 +1,7 @@
+{
+  "name": "com.omnibridge.host",
+  "description": "OMNIBRIDGE AI Desktop Bridge — native messaging host",
+  "path": "REPLACE_WITH_ABSOLUTE_PATH_TO_host.js",
+  "type": "stdio",
+  "allowed_origins": ["chrome-extension://REPLACE_WITH_EXTENSION_ID/"]
+}

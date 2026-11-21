@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>OMNIBRIDGE</title>
+<style>
+body { width: 320px; font-family: system-ui, sans-serif; background: #0b0f17; color: #e6edf7; padding: 14px; }
+h1 { font-size: 16px; margin: 0 0 10px; } h1 span { color: #22d3ee; }
+label { display: block; font-size: 12px; color: #8b9bb4; margin: 8px 0 4px; }
+input, select { width: 100%; background: #121a29; border: 1px solid #22304d; color: #e6edf7; padding: 7px; border-radius: 6px; }
+button { width: 100%; margin-top: 10px; background: #4f8cff; color: #fff; border: none; padding: 9px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+#status { font-size: 12px; margin-top: 10px; color: #8b9bb4; }
+</style></head><body>
+<h1>◈ OMNIBRIDGE <span>AI</span></h1>
+<label>Token local (~/.omnibridge/token.txt)</label>
+<input id="token" type="password" placeholder="collez le token">
+<label>Mode</label>
+<select id="mode">
+  <option value="manual">Manuel — l'utilisateur choisit quoi transmettre</option>
+  <option value="contextual">Contextuel — contexte de l'onglet actif</option>
+  <option value="developer">Développeur — infos techniques de la page</option>
+  <option value="research">Recherche — documents Web</option>
+</select>
+<button id="connect">Connecter au serveur local</button>
+<div id="status">…</div>
+<script src="popup.js"></script>
+</body></html>

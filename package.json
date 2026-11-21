@@ -1,0 +1,32 @@
+{
+  "name": "omnibridge-ai",
+  "version": "1.0.0",
+  "description": "OMNIBRIDGE AI — Universal MCP: autonomous agent engine, knowledge engine, Roblox Studio integration, browser bridge and dashboard",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "omnibridge": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "start:http": "OMNIBRIDGE_TRANSPORT=http node dist/index.js",
+    "start:both": "OMNIBRIDGE_TRANSPORT=both node dist/index.js",
+    "dev": "tsc -p tsconfig.json && node dist/index.js",
+    "test": "npm run build && node --test tests/omnibridge.test.mjs",
+    "diagnose": "node dist/index.js --diagnose",
+    "bridge": "node desktop-bridge/host.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  },
+  "license": "MIT"
+}

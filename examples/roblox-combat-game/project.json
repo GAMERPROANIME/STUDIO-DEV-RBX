@@ -1,0 +1,27 @@
+{
+  "name": "OmniBridgeCombatGame",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": { "$path": "src/shared" },
+      "Remotes": {
+        "$className": "Folder",
+        "CombatHit": { "$className": "RemoteEvent" },
+        "RequestRespawn": { "$className": "RemoteEvent" }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": { "$path": "src/client" }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "Arena": { "$path": "src/arena" }
+    }
+  }
+}

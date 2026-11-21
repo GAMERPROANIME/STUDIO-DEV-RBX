@@ -1,0 +1,10 @@
+{
+  "name": "example-connector",
+  "version": "1.0.0",
+  "author": "OMNIBRIDGE",
+  "description": "Example connector showing the manifest format. Declares no tools of its own; demonstrates plugin_diagnose.",
+  "capabilities": ["example"],
+  "tools": [],
+  "permissions": [1],
+  "enabled": true
+}
