@@ -79,6 +79,13 @@ La page locale s'appelle **Pont OMNIBRIDGE**. Elle te dit, en français :
 
 ---
 
+## Tu veux utiliser **DeepSeek web** avec Studio ?
+
+Lance `DEMARRER-PANNEAU-WINDOWS.bat` (ou `DEMARRER-PANNEAU-MAC-LINUX.command`) puis suis le guide
+dédié : [`DEEPSEEK_WEB_PAS_A_PAS.md`](DEEPSEEK_WEB_PAS_A_PAS.md). Il installe le panneau dans
+DeepSeek (4 boutons) et branche Studio. Le fichier `DEMARRER-WINDOWS.bat` ci-dessus concerne le
+nouveau pont automatique (étape suivante du projet), pas le panneau.
+
 ## Ce qui fonctionne aujourd'hui (et ce qui arrive ensuite)
 
 **Fonctionne et est testé (vérifiable chez toi) :**

@@ -84,3 +84,37 @@ def test_panel_never_automates_the_chat_ui():
     for pattern in forbidden:
         assert pattern not in src, f"panel must not use {pattern}"
     assert "navigator.clipboard.writeText" in src
+
+
+def test_panel_contract_matches_the_documented_deepseek_flow():
+    """The guide (DEEPSEEK_WEB_PAS_A_PAS.md) promises exactly these four buttons."""
+    src = (ROOT / "extension" / "bridge-panel.js").read_text(encoding="utf-8")
+    for needle in ("/api/webai/prompt?budgetChars=6000", "/api/webai/run", "Bearer",
+                   "chrome.storage.local", "http://127.0.0.1:8765"):
+        assert needle in src, needle
+    for label in ("Prompt", "Lire la réponse", "Exécuter", "Copier"):
+        assert label in src, label
+
+
+def test_manifest_loads_the_panel_on_deepseek_and_keeps_the_core_local():
+    manifest = json.loads((ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    panel_groups = [group for group in manifest["content_scripts"]
+                    if "bridge-panel.js" in group["js"]]
+    assert panel_groups, "the floating panel must be registered"
+    hosts = {match for group in panel_groups for match in group["matches"]}
+    assert "https://chat.deepseek.com/*" in hosts
+    permissions = set(manifest["host_permissions"])
+    assert "http://127.0.0.1/*" in permissions and "http://localhost/*" in permissions
+    # no blanket access: only the documented AI sites plus loopback
+    assert "<all_urls>" not in permissions
+    documented = {"https://chat.deepseek.com/*", "https://chat.openai.com/*",
+                  "https://chatgpt.com/*", "https://gemini.google.com/*",
+                  "https://copilot.microsoft.com/*", "https://grok.com/*",
+                  "http://127.0.0.1/*", "http://localhost/*"}
+    assert permissions == documented, permissions ^ documented
+
+
+def test_popup_offers_server_and_token_fields():
+    popup = (ROOT / "extension" / "popup.html").read_text(encoding="utf-8")
+    assert 'id="server"' in popup and 'id="token"' in popup
+    assert "Connecter au core Python" in popup

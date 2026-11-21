@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -20,10 +20,11 @@ from .core.logger import log
 from .core.permissions import PermissionDenied
 from .mcp_server import build_mcp_server
 from .openapi_actions import build_actions_openapi
+from .setup_page import build_setup_page, should_reveal_token
 from .webai import build_prompt, check_remote_mcp, openai_tools, run_calls
 
 EXEMPT_PATHS = {"/", "/api/health", "/favicon.ico", "/index.html", "/style.css", "/app.js", "/docs",
-                "/openapi.json", "/openapi/actions.json"}
+                "/openapi.json", "/openapi/actions.json", "/demarrer"}
 
 
 class CallRequest(BaseModel):
@@ -194,6 +195,49 @@ def create_http_app(bridge: OmniBridge, cfg: Config | None = None):
     @app.get("/api/roblox", tags=["roblox"])
     async def roblox():
         return await bridge.roblox.info()
+
+    @app.get("/demarrer", include_in_schema=False)
+    async def demarrer(request: Request):
+        """Guided setup page (French) for the in-page panel: no command line needed."""
+        info: dict[str, Any] = {}
+        try:
+            info = await asyncio.wait_for(bridge.roblox.info(), timeout=10)
+        except Exception as exc:  # noqa: BLE001 - a slow Studio must not break the page
+            info = {"available": False, "error": f"{type(exc).__name__}: {exc}", "tools": []}
+        available = bool(info.get("available"))
+        error = str(info.get("error") or "")
+        if available:
+            studio_state = "ready"
+        elif "not found" in error.lower() or "not_configured" in error.lower():
+            studio_state = "studio_closed"
+        else:
+            studio_state = "mcp_unreachable"
+        page = build_setup_page(
+            server_url=f"http://{request.url.hostname}:{request.url.port or 80}",
+            token=cfg.token if should_reveal_token(
+                request.headers.get("origin"),
+                request.headers.get("sec-fetch-mode"),
+                request.headers.get("sec-fetch-site"),
+            ) else None,
+            studio_state=studio_state,
+            studio_detail=error,
+            tool_count=len(info.get("tools") or []),
+            reveal=should_reveal_token(
+                request.headers.get("origin"),
+                request.headers.get("sec-fetch-mode"),
+                request.headers.get("sec-fetch-site"),
+            ),
+            page_url=str(request.url).split("?")[0],
+        )
+        return HTMLResponse(page, headers={
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Referrer-Policy": "no-referrer",
+            "Content-Security-Policy": (
+                "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; "
+                "img-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'"),
+        })
 
     @app.get("/api/browser/status", tags=["browser"])
     async def browser_status():

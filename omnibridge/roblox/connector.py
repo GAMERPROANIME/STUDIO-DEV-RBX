@@ -23,9 +23,18 @@ STUDIO_SETUP_INSTRUCTIONS = "\n".join([
 ])
 
 
+def _wrap_windows_batch(command: str, args: list[str],
+                        system: str | None = None) -> tuple[str, list[str]]:
+    """A .bat/.cmd cannot be spawned directly on Windows: it needs cmd.exe /c."""
+    system = platform.system() if system is None else system
+    if system == "Windows" and Path(command).suffix.lower() in (".bat", ".cmd"):
+        return "cmd.exe", ["/c", command, *args]
+    return command, args
+
+
 def discover_studio_mcp_command(cfg: Config) -> tuple[str | None, list[str]]:
     if cfg.roblox_studio_mcp_command:
-        return cfg.roblox_studio_mcp_command, cfg.roblox_studio_mcp_args
+        return _wrap_windows_batch(cfg.roblox_studio_mcp_command, cfg.roblox_studio_mcp_args)
     candidates: list[Path] = []
     if platform.system() == "Windows":
         local = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
@@ -35,7 +44,7 @@ def discover_studio_mcp_command(cfg: Config) -> tuple[str | None, list[str]]:
         candidates.append(Path.home() / "Applications/RobloxStudio.app/Contents/MacOS/StudioMCP")
     for c in candidates:
         if c.exists():
-            return str(c), []
+            return _wrap_windows_batch(str(c), [])
     return None, []
 
 

@@ -268,6 +268,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.level:
         overrides["permission_level"] = args.level
     cfg = load_config(**overrides)
+    if getattr(args, "print_token", False) and args.command != "studio-bridge":
+        print(cfg.ensure_token())
+        return 0
     if args.command == "call" and not args.tool:
         print("ERROR: --tool is required for the 'call' command", file=sys.stderr)
         return 2

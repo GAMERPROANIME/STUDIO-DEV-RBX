@@ -24,8 +24,14 @@ exécuteur multi-agents autonome.
 3. **C'est tout** : une page s'ouvre sur `http://127.0.0.1:17613` avec le code d'appairage,
    l'état de Roblox Studio en français et le bouton « Re-vérifier l'état ».
 
-Guide illustré (dépannage, captures, FAQ) : [`DEMARRAGE_SIMPLE.md`](DEMARRAGE_SIMPLE.md) ·
-aperçu de la page : [`docs/apercu-page.html`](docs/apercu-page.html).
+**Pour utiliser DeepSeek web avec Roblox Studio dès maintenant** : double-clic sur
+`DEMARRER-PANNEAU-WINDOWS.bat` (ou `DEMARRER-PANNEAU-MAC-LINUX.command`), puis suis
+[`DEEPSEEK_WEB_PAS_A_PAS.md`](DEEPSEEK_WEB_PAS_A_PAS.md) — panneau dans DeepSeek, 4 boutons
+(Prompt · Lire la réponse · Exécuter · Copier), outils réels exécutés dans Studio.
+
+Guides : [`DEMARRAGE_SIMPLE.md`](DEMARRAGE_SIMPLE.md) (dépannage, FAQ) ·
+[`DEEPSEEK_WEB_PAS_A_PAS.md`](DEEPSEEK_WEB_PAS_A_PAS.md) ·
+aperçu de la page locale : [`docs/apercu-page.html`](docs/apercu-page.html).
 
 ## Démarrage rapide (développeur)
 
