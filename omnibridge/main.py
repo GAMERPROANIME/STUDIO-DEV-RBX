@@ -184,14 +184,44 @@ async def cmd_webai(cfg: Config, args: argparse.Namespace) -> int:
         await bridge.close()
 
 
+async def cmd_studio_bridge(_cfg: Config, args: argparse.Namespace) -> int:
+    """Local bridge: browser-extension WebSocket ↔ official Roblox Studio MCP server."""
+    from .studio_bridge.config import load_config as load_bridge_config
+    from .studio_bridge.main import StudioBridge
+
+    bridge_cfg = load_bridge_config(
+        port=getattr(args, "bridge_port", None),
+        permission_level=getattr(args, "level", None),
+        studio_command=getattr(args, "studio_command", None),
+    )
+    if args.print_token:
+        print(bridge_cfg.token)
+        return 0
+    try:
+        bridge = StudioBridge(bridge_cfg)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    print(f"OMNIBRIDGE Studio Bridge · {bridge_cfg.uri} · permission level "
+          f"{bridge_cfg.permission_level}", file=sys.stderr)
+    print(f"  Pairing token    : {bridge_cfg.token}", file=sys.stderr)
+    print(f"  Token file       : {bridge_cfg.token_file}", file=sys.stderr)
+    print(f"  Studio MCP       : {bridge.client.launch.display or 'not found (auto-discovery)'}",
+          file=sys.stderr)
+    await bridge.run()
+    return 0
+
+
 COMMANDS = {"serve": cmd_serve, "diagnose": cmd_diagnose, "init": cmd_init,
-            "tools": cmd_tools, "call": cmd_call, "test": cmd_test, "webai": cmd_webai}
+            "tools": cmd_tools, "call": cmd_call, "test": cmd_test, "webai": cmd_webai,
+            "studio-bridge": cmd_studio_bridge}
 
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="omnibridge", description="OMNIBRIDGE AI — Universal MCP (Python core)")
     p.add_argument("command", nargs="?", default="serve", choices=sorted(COMMANDS),
-                   help="serve (default) | diagnose | init | tools | call | test")
+                   help="serve (default) | diagnose | init | tools | call | test | webai | "
+                        "studio-bridge")
     p.add_argument("--transport", choices=["stdio", "http", "both"], default=None)
     p.add_argument("--stdio", action="store_true", help="shorthand for --transport stdio")
     p.add_argument("--port", type=int, default=None)
@@ -213,6 +243,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--categories", default=None, help="webai: comma-separated category filter")
     p.add_argument("--token", default=None, help="token for --check")
     p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.add_argument("--bridge-port", type=int, default=None,
+                   help="studio-bridge: WebSocket port (default 17613)")
+    p.add_argument("--studio-command", default=None,
+                   help="studio-bridge: explicit Studio MCP command (default auto-discovery)")
+    p.add_argument("--print-token", action="store_true", help="studio-bridge: print the token and exit")
     return p
 
 

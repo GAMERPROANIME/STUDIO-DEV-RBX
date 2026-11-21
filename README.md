@@ -39,6 +39,7 @@ omnibridge call --tool system_health      # appeler un outil en CLI
 omnibridge call --tool process_run --args '{"action":"pytest"}' --confirm
 omnibridge test                           # auto-test end-to-end des outils
 
+python -m python_bridge                    # Studio Bridge : ws://127.0.0.1:17613 (extension ↔ Studio MCP)
 omnibridge webai --prompt > prompt.txt     # ChatGPT/DeepSeek web : prompt à coller
 omnibridge webai --run reponse.md          # exécute les appels du modèle, rend les résultats
 omnibridge webai --check https://…/mcp     # ChatGPT Developer Mode : vérifie l'endpoint public
@@ -54,6 +55,7 @@ Token : `~/.omnibridge/token.txt` (généré au premier lancement, `chmod 600`).
 | --- | --- | --- |
 | **Core** | Python 3.11+ / asyncio | registre d'outils, permissions L1–L4, validation, SQLite, audit, sandbox |
 | **Serveur MCP** | SDK MCP Python v2 (`MCPServer`) | stdio + Streamable HTTP, tools / resources / prompts, schémas générés depuis les signatures réelles |
+| **Studio Bridge** | Python (`websockets` + SDK MCP) | **chaîne réelle** web → extension → `ws://127.0.0.1:17613` → serveur MCP officiel de Studio : jeton d'appairage, filtre d'origine, découverte dynamique, 6 états, audit |
 | **Ponts IA** | Python + extension | **Panneau dans la page** (ChatGPT, DeepSeek, Gemini, Copilot, Grok), pont presse-papier, **Actions OpenAPI** (Custom GPT & Copilot Studio), API OpenAI-compatible (DeepSeek/Gemini/Grok/xAI/Ollama), MCP distant vérifié |
 | **77 outils** | Python | system 4 · files 7 · project 2 · code 5 · knowledge 9 · web 5 · roblox 13 · browser 11 · bridge 2 · agent 10 · plugins 2 · automation 3 · webai 4 |
 | **Moteur d'agents** | Python asyncio | plan → recherche → exécution → test → correction, checkpoints, reprise, annulation, 7 rôles |
@@ -83,18 +85,20 @@ complet est fourni dans [`examples/roblox-combat-game/`](examples/roblox-combat-
 | [`docs/ROBLOX.md`](docs/ROBLOX.md) | Studio MCP officiel, Rojo, plugin, workflow de test |
 | [`docs/EXTENSION.md`](docs/EXTENSION.md) | extension, modes, Desktop Bridge, dépannage |
 | [`docs/WEB_AI.md`](docs/WEB_AI.md) | **ChatGPT, DeepSeek, Gemini, Copilot, Grok web** : 4 voies testées, installation, limites |
+| [`docs/STUDIO_BRIDGE.md`](docs/STUDIO_BRIDGE.md) | **Studio Bridge** : architecture web → extension → Python → MCP Officiel, protocole WS, sécurité, 6 états, feuille de route |
 | [`desktop-bridge/README.md`](desktop-bridge/README.md) | protocole Native Messaging et installation |
 
 ## Tests
 
 ```bash
-python -m pytest            # 114 tests : core, outils, agents, MCP, HTTP, bridge, Luau, Actions, ponts IA
+python -m pytest            # 133 tests : core, outils, agents, MCP, HTTP, bridge, Luau, Actions, ponts IA, Studio Bridge
 python -m omnibridge test   # auto-test runtime des outils
 python -m omnibridge diagnose
 ```
 
 Les tests couvrent le protocole MCP réel (stdio et Streamable HTTP), la boucle autonome
-complète, la persistance, les refus de permission, le sandbox et le pont navigateur.
+complète, la persistance, les refus de permission, le sandbox, le pont navigateur et le Studio
+Bridge (client MCP réel, découverte, timeouts, sécurité WebSocket de bout en bout).
 
 ## Licence
 

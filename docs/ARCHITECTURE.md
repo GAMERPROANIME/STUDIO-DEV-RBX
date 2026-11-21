@@ -70,7 +70,18 @@ spécialisées vers leur environnement (navigateur, Roblox Studio, rendu web).
 | `omnibridge/tools/*.py` | 12 modules d'outils (system, files, code, web, knowledge, roblox, browser, bridge, agent, plugins, automation, project) |
 | `omnibridge/bridge/native_host.py` | hôte Native Messaging Python (framing 4 octets + JSON) |
 | `omnibridge/bridge/install.py` | enregistrement du host (Linux/macOS/Windows), manifests Chrome/Firefox |
-| `omnibridge/main.py` | CLI : `serve`, `diagnose`, `init`, `tools`, `call`, `test` |
+| `omnibridge/studio_bridge/*` | **Studio Bridge** : `websocket_server` (127.0.0.1:17613), `security`, `process_manager`, `mcp_client` (SDK stdio), `tool_registry`, `roblox_connector` (6 états), `connection_manager`, `config`, `main` — voir [`STUDIO_BRIDGE.md`](STUDIO_BRIDGE.md) |
+| `python_bridge/` | point d'entrée `python -m python_bridge` du Studio Bridge |
+| `omnibridge/main.py` | CLI : `serve`, `diagnose`, `init`, `tools`, `call`, `test`, `webai`, `studio-bridge` |
+
+## Deux chemins vers Roblox Studio (ne pas les confondre)
+
+| Chemin | Qui parle à qui | Usage |
+| --- | --- | --- |
+| **Connecteur interne** (`omnibridge/roblox/connector.py`) | core Python → Studio MCP officiel | outils `roblox_*` de la CLI, du dashboard et des clients MCP natifs |
+| **Studio Bridge** (`omnibridge/studio_bridge/`) | extension navigateur → pont Python → Studio MCP officiel | IA **web** (DeepSeek/Gemini/ChatGPT…), avec appairage et audit dédiés |
+
+Les deux sont des **clients** du serveur MCP de Roblox : aucun ne réimplémente les outils de Studio.
 
 ## Flux d'un appel d'outil
 
