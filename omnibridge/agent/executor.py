@@ -30,11 +30,12 @@ class StepResult:
     error: str = ""
     attempts: int = 0
     finished_at: str = ""
+    role: str = "coordinator"
 
     def to_dict(self) -> dict:
         return {"stepId": self.step_id, "title": self.title, "tool": self.tool, "ok": self.ok,
-                "output": self.output, "error": self.error, "attempts": self.attempts,
-                "finishedAt": self.finished_at}
+                "role": self.role, "output": self.output, "error": self.error,
+                "attempts": self.attempts, "finishedAt": self.finished_at}
 
 
 @dataclass
@@ -88,6 +89,19 @@ class TaskExecutor:
         self._tasks[task_id] = rec
         return rec
 
+    @staticmethod
+    def role_progress(rec: TaskRecord) -> dict[str, dict[str, int]]:
+        """Multi-agent view: which role owns which steps and how far it got."""
+        progress: dict[str, dict[str, int]] = {}
+        for step in rec.plan.steps:
+            bucket = progress.setdefault(step.role, {"steps": 0, "done": 0, "failed": 0})
+            bucket["steps"] += 1
+            result = rec.results.get(step.id)
+            if result is None:
+                continue
+            bucket["done" if result.ok else "failed"] += 1
+        return progress
+
     def list_tasks(self, limit: int = 50) -> list[dict[str, Any]]:
         return self._db.task_list(limit)
 
@@ -133,7 +147,8 @@ class TaskExecutor:
                     if executed >= self._cfg.agent_max_steps:
                         rec.status = "failed"
                         rec.results[step.id] = StepResult(step.id, step.title, step.tool, False, None,
-                                                          f"Step limit reached ({self._cfg.agent_max_steps})", 0, _now())
+                                                      f"Step limit reached ({self._cfg.agent_max_steps})", 0,
+                                                      _now(), step.role)
                         break
                     progress = True
                     executed += 1
@@ -169,14 +184,14 @@ class TaskExecutor:
             try:
                 output = await asyncio.wait_for(
                     self._call_tool(step.tool, args), timeout=self._cfg.agent_step_timeout_s)
-                return StepResult(step.id, step.title, step.tool, True, output, "", attempt, _now())
+                return StepResult(step.id, step.title, step.tool, True, output, "", attempt, _now(), step.role)
             except Exception as e:  # noqa: BLE001
                 last_error = str(e)
                 error_sigs[last_error] = error_sigs.get(last_error, 0) + 1
                 log.warning("step attempt failed", extra={"task": rec.id, "step": step.id,
                                                           "attempt": attempt, "error": last_error})
         return StepResult(step.id, step.title, step.tool, False, None, last_error,
-                          self._cfg.agent_max_retries + 1, _now())
+                          self._cfg.agent_max_retries + 1, _now(), step.role)
 
     def restore_checkpoint(self, task_id: str) -> dict[str, Any]:
         cp = self._db.checkpoint_latest(task_id)
@@ -187,7 +202,8 @@ class TaskExecutor:
         if rec and isinstance(snap, dict) and snap.get("results"):
             rec.results = {k: StepResult(step_id=v["stepId"], title=v["title"], tool=v["tool"], ok=v["ok"],
                                          output=v.get("output"), error=v.get("error", ""),
-                                         attempts=v.get("attempts", 0), finished_at=v.get("finishedAt", ""))
+                                         attempts=v.get("attempts", 0), finished_at=v.get("finishedAt", ""),
+                                         role=v.get("role", "coordinator"))
                            for k, v in snap["results"].items()}
             rec.status = "paused"
             self._persist(rec)

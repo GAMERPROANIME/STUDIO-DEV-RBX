@@ -115,3 +115,22 @@ def test_compare_solutions_scores(bridge, run):
     }))
     assert res["recommendation"] == "RemoteEvents"
     assert res["ranking"][0]["score"] > res["ranking"][1]["score"]
+
+
+def test_task_reports_role_progress(bridge, run):
+    import asyncio
+
+    async def scenario():
+        started = await bridge.call_tool("agent_start_task", {"goal": "Build a Roblox arena"})
+        task_id = started["taskId"]
+        for _ in range(200):
+            status = await bridge.call_tool("agent_get_task_status", {"taskId": task_id})
+            if status["status"] not in ("running", "pending"):
+                break
+            await asyncio.sleep(0.05)
+        return status
+
+    status = run(scenario())
+    assert status["roles"], "per-role progress must be reported"
+    assert sum(r["steps"] for r in status["roles"].values()) == status["total"]
+    assert all("role" in r for r in status["results"])

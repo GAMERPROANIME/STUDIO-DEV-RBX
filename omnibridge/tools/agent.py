@@ -49,6 +49,7 @@ def register_agent_tools(reg: Registry, executor: TaskExecutor) -> None:
         return {"taskId": rec.id, "goal": rec.goal, "status": rec.status,
                 "completed": sum(1 for r in results if r.ok), "failed": sum(1 for r in results if not r.ok),
                 "total": len(rec.plan.steps), "results": [r.to_dict() for r in results],
+                "roles": executor.role_progress(rec),
                 "createdAt": rec.created_at, "updatedAt": rec.updated_at}
 
     async def cancel_task(args: dict, ctx) -> dict:
